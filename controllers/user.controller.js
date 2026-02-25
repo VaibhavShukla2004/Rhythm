@@ -1,19 +1,16 @@
 const userService = require('../services/user.service');
 
-const getUsers = (req,res) => {
-    const users = userService.fetchAllUsers();
-    res.json(users);
-}
+exports.getUsers = async (req, res) => {
+  const users = await userService.getAllUsers();
+  res.json(users);
+};
 
-const getUserById = (req,res) => {
-    const id = req.params.id;
-    const user = userService.fetchUserById(id);
+exports.getUserById = async (req, res) => {
+  const user = await userService.getUserById(req.params.id);
 
-    if(!user){
-        return res.status(400).json({ message: 'User not found'});
-    }
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' });
+  }
 
-    res.json(user);
-}
-
-module.exports = {getUsers, getUserById};
+  res.json(user);
+};

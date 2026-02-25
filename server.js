@@ -7,8 +7,12 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 
 const userRoutes = require('./routes/user.routes');
+const authRouthes = require('./routes/auth.routes');
+const songRoutes = require('./routes/song.routes');
 
+app.use('/auth',authRouthes);
 app.use('/user',userRoutes);
+app.use('/song',songRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

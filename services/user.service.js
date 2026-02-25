@@ -1,12 +1,9 @@
-const users = [
-  { id: 1, name: 'Alice' },
-  { id: 2, name: 'Bob' }
-];
+const userModel = require('../models/user.model');
 
-exports.fetchAllUsers = () => {
-  return users;
+exports.getAllUsers = async () => {
+  return await userModel.findAllUsers();
 };
 
-exports.fetchUserById = (id) => {
-  return users.find(u => u.id == id);
+exports.getUserById = async (id) => {
+  return await userModel.findUserById(id);
 };
