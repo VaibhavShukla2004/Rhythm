@@ -12,3 +12,10 @@ const port = process.env.PORT || 3000; // You can use environment variables for 
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
+
+const userRoutes = require('./routes/users');
+const productRoutes = require('./routes/products');
+
+app.use('/users',userRoutes);
+app.use('/products',productRoutes);
+
