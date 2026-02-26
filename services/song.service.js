@@ -1,18 +1,14 @@
-const axios = require('axios');
+const { Client } = require("lrclib-api");
 
-const BASE_URL = 'https://api.example.com/songs';
+const client = new Client();
 
-exports.getAllSongs = async () => {
-  const response = await axios.get(BASE_URL);
-  return response.data;
-};
+exports.getUnsyncedLyrics = async () => {
+  const query = {
+    track_name: "The Chain",
+    artist_name: "Fleetwood Mac",
+  };
 
-exports.getSongById = async (id) => {
-  const response = await axios.get(`${BASE_URL}/${id}`);
-  return response.data;
-};
+  const lyrics = await client.getUnsynced(query);
 
-exports.getSongByName = async (name) => {
-  const response = await axios.get(`${BASE_URL}?name=${name}`);
-  return response.data;
+  return lyrics;
 };
