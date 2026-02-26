@@ -2,11 +2,8 @@ const { Client } = require("lrclib-api");
 
 const client = new Client();
 
-exports.getUnsyncedLyrics = async () => {
-  const query = {
-    track_name: "The Chain",
-    artist_name: "Fleetwood Mac",
-  };
+exports.getUnsyncedLyrics = async (track_name,artist_name) => {
+  const query = { track_name, artist_name};
 
   const lyrics = await client.getUnsynced(query);
 
