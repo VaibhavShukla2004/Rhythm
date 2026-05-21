@@ -9,10 +9,10 @@ app.use(cors());
 app.use(express.json());
 
 const userRoutes = require('./routes/user.routes');
-const authRouthes = require('./routes/auth.routes');
+const authRoutes = require('./routes/auth.routes');
 const songRoutes = require('./routes/song.routes');
 
-app.use('/auth',authRouthes);
+app.use('/auth',authRoutes);
 app.use('/user',userRoutes);
 app.use('/song',songRoutes);
 
