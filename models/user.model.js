@@ -1,40 +1,32 @@
-const pool = require('../config/db');
+const mongoose = require("mongoose");
 
-exports.createUser = async ({ email, password, name, age, securityAnswer }) => {
-  const result = await pool.query(
-    `INSERT INTO users (email, password, name, age, security_answer)
-     VALUES ($1, $2, $3, $4, $5)
-     RETURNING id, email, name, age, created_at`,
-    [email, password, name, age, securityAnswer]
-  );
+const userSchema = new mongoose.Schema({
+    email: {
+        type: String,
+        required: true,
+        unique: true
+    },
 
-  return result.rows[0];
-};
+    password: {
+        type: String,
+        required: true
+    },
 
-exports.findAllUsers = async () => {
-  const result = await pool.query(
-    `SELECT id, email, name, age, created_at FROM users`
-  );
+    name: {
+        type: String,
+        required: true
+    },
 
-  return result.rows;
-};
+    age: {
+        type: Number
+    },
 
-exports.findUserById = async (id) => {
-  const result = await pool.query(
-    `SELECT id, email, name, age, created_at
-     FROM users
-     WHERE id = $1`,
-    [id]
-  );
+    securityAnswer: {
+        type: String
+    }
 
-  return result.rows[0];
-};
+}, {
+    timestamps: true
+});
 
-exports.findUserByEmail = async (email) => {
-  const result = await pool.query(
-    `SELECT * FROM users WHERE email = $1`,
-    [email]
-  );
-
-  return result.rows[0];
-};
+module.exports = mongoose.model("User", userSchema);

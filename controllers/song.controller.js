@@ -9,7 +9,7 @@ exports.getUnsyncedLyrics = async (req, res) => {
         message: 'track name and artist name required'
       });
     }
-
+// Pass the data to the Service layer!
     const lyrics = await songService.getUnsyncedLyrics(track_name,artist_name);
 
     if (!lyrics) {

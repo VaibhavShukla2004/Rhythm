@@ -1,9 +1,9 @@
 const userModel = require('../models/user.model');
 
 exports.getAllUsers = async () => {
-  return await userModel.findAllUsers();
+  return await userModel.find();//select * from users
 };
 
 exports.getUserById = async (id) => {
-  return await userModel.findUserById(id);
+  return await userModel.findById(id);
 };
