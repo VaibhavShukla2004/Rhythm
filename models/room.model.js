@@ -9,7 +9,7 @@ const roomSchema = new mongoose.Schema(
     },
 
     hostId: {//RBAC checks-kickPlayer(),startGame(),deleteRoom(),transferHost()
-      type: mongoose.Schema.Types.ObjectId,//in this case,such type is a foreg 24 digit id generated.But since ref is used,it fetches an id from User collection and assigns it to hostId field.
+      type: mongoose.Schema.Types.ObjectId,//check 03/06/2026 doc. It points to an id in the User collection,id that we provide during room creation
       ref: "User",
       required: true,
     },
@@ -35,12 +35,21 @@ const roomSchema = new mongoose.Schema(
       max: 10,//hardCoded for now
     },
 
-    status: {//basic stuff like preventing somebody to join when in game/ended,or allowing to join when waiting
-      type: String,
-      enum: ["waiting", "in-game", "ended"],//can check google doc on 3rd of june to understand why "ended" exists
-      default: "waiting",
+    gamesPlayed: {
+    type: Number,//so as to display useful match history
+    default: 0
     },
 
+    roomStatus: {//basic stuff like preventing somebody to join when in game/ended,or allowing to join when waiting
+      type: String,
+      enum: ["active", "ended"],//Waiting means room is waiting to start game,ended means its time to delete room now
+      default: "active",
+    },
+    gameStatus: {
+        type: String,
+        enum: ["idle", "in-progress"],
+        default: "idle"
+  },
     expiresAt: {//to remove room logic when post expiry
       type: Date,
       required: true,
