@@ -25,7 +25,15 @@ async function generateRoomCode() {
 }
 //1.Generate room code 2.Create room-Add host to players[],Set expiry 3.Return room
 async function createRoom(hostId, maxPlayers) {
+const alreadyHostInAnotherRoom = await Room.findOne({
+    hostId
+});
 
+if (alreadyHostInAnotherRoom) {
+    throw new Error(
+        "You are already hosting a room"
+    );
+}
     const roomCode = await generateRoomCode();
     if (maxPlayers < 2 || maxPlayers > 10) {
     throw new Error("Invalid room size");
@@ -39,7 +47,7 @@ async function createRoom(hostId, maxPlayers) {
         hostId,
         players: [
             {
-                userId: hostId
+                userId: hostId//host automatically added to players after creating room
             }
         ],
         maxPlayers,
@@ -56,13 +64,13 @@ async function getRoomDetails(roomCode) {//shld be available to players during a
     }).populate("players.userId", "name");//populate fetches details from ref table if fields are not specified. Sicne name is specified here,it fetches only name
 
     if (!room) {
-        throw new Error("Room not found");
+        throw new Error("Room details not found");
     }
 
     return room;
 }
 //1. Room exists? 2.Game already started? 3.Room full? 4.Room expired? 5.Already joined?
-async function joinRoom(roomCode, userId) {
+async function joinRoom(roomCode, userId) {//room expiry logic is left
 
     const room = await Room.findOne({
         roomCode
@@ -72,7 +80,7 @@ async function joinRoom(roomCode, userId) {
         throw new Error("Room not found");
     }
 
-    if (room.gameStatus !== "in-progress") {
+    if (room.gameStatus === "in-progress") {
         throw new Error("Game already started");
     }
 
@@ -96,8 +104,8 @@ async function joinRoom(roomCode, userId) {
 
     return room;
 }
-
-async function transferHost(roomCode, newHostId = null) {
+//yet to understand stuff from here. Its pretty interesting so far,the room feature shld be done in another day
+async function transferHost(roomCode, newHostId = null,currentUserId = null) {//the params are thought for a manual transfer
 
     const room = await Room.findOne({
         roomCode
@@ -111,14 +119,23 @@ async function transferHost(roomCode, newHostId = null) {
         throw new Error("Cannot transfer host during game");
     }
 
-    // Automatic transfer
+    // Automatic transfer(called during leaveRoom())
     if (!newHostId) {
+     console.log("What about here?");
+     if (room.players.length === 0) {
 
-        if (room.players.length === 0) {
-            throw new Error("No players left");
-        }
+    ///room.roomStatus = "ended";//means we are deleting room right away after last player leaves,for now
 
-        const oldestPlayer = room.players.reduce(
+    await room.save();
+
+    // Later:
+    // transfer stats
+    // delete room
+
+    return null;
+}
+
+        const oldestPlayer = room.players.reduce(//basically checking if(player[i].joinedAt < oldest.joinedAt) then oldest = player[i] 
             (oldest, current) =>
                 current.joinedAt < oldest.joinedAt
                     ? current
@@ -126,20 +143,29 @@ async function transferHost(roomCode, newHostId = null) {
         );
 
         room.hostId = oldestPlayer.userId;
-
+        console.log(room.hostId);
         await room.save();
 
         return room;
     }
 
     // Manual transfer
-    const playerExists = room.players.some(
-        player =>
-            player.userId.toString() ===
-            newHostId.toString()
+if (
+    room.hostId.toString() !==
+    currentUserId.toString()
+) {
+    throw new Error(
+        "Only host can transfer host"
     );
+}
 
-    if (!playerExists) {
+const newHostExists = room.players.some(
+    player =>
+        player.userId.toString() ===
+        newHostId.toString()
+);
+
+    if (!newHostExists) {
         throw new Error(
             "New host must be in room"
         );
@@ -151,3 +177,89 @@ async function transferHost(roomCode, newHostId = null) {
 
     return room;
 }
+
+async function leaveRoom(roomCode, userId) {
+
+    const room = await Room.findOne({
+        roomCode
+    });
+
+    if (!room) {
+        throw new Error("Room not found");
+    }
+
+    const playerExists = room.players.some(
+        player =>
+            player.userId.toString() ===
+            userId.toString()
+    );
+
+    if (!playerExists) {
+        throw new Error(
+            "Player not in room"
+        );
+    }
+
+    if (room.gameStatus === "in-progress") {
+        throw new Error(
+            "Cannot leave room during game"
+        );
+    }
+
+    room.players = room.players.filter(//removes player where player.userId matches userId of leaver
+        player =>
+            player.userId.toString() !==
+            userId.toString()
+    );
+    await room.save();   
+    if (
+        room.hostId.toString() ===
+        userId.toString()
+    ) {
+        await transferHost(roomCode);
+        const updatedRoom = await Room.findOne({
+        roomCode
+    });//so as to not get stale data back
+
+    return updatedRoom;
+    }
+    return room;
+}
+// async function startGame(roomCode, userId) {
+
+//     const room = await Room.findOne({
+//         roomCode
+//     });
+
+//     if (!room) {
+//         throw new Error("Room not found");
+//     }
+
+//     if (
+//         room.hostId.toString() !==
+//         userId.toString()
+//     ) {
+//         throw new Error(
+//             "Only host can start game"
+//         );
+//     }
+
+//     if (room.gameStatus === "in-progress") {
+//         throw new Error(
+//             "Game already in progress"
+//         );
+//     }
+
+//     if (room.players.length < 2) {
+//         throw new Error(
+//             "Minimum 2 players required"
+//         );
+//     }
+
+//     room.gameStatus = "in-progress";
+
+//     await room.save();
+
+//     return room;
+// }
+module.exports={createRoom,getRoomDetails,joinRoom,transferHost,leaveRoom};

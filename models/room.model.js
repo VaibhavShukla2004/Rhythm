@@ -25,7 +25,7 @@ const roomSchema = new mongoose.Schema(
                 type: Date,
                 default: Date.now//to transfer host to oldest player when host leaves,show "joined 5 mins ago" etc
             }
-    }
+    }//an _id added to every sub document
     ],
 
     maxPlayers: {//to restrict ofc
@@ -40,20 +40,19 @@ const roomSchema = new mongoose.Schema(
     default: 0
     },
 
-    roomStatus: {//basic stuff like preventing somebody to join when in game/ended,or allowing to join when waiting
-      type: String,
-      enum: ["active", "ended"],//Waiting means room is waiting to start game,ended means its time to delete room now
-      default: "active",
-    },
     gameStatus: {
         type: String,
-        enum: ["idle", "in-progress"],
+        enum: ["idle", "in-progress"],//i think dont let people do certain stuff when game is in progress
         default: "idle"
   },
     expiresAt: {//to remove room logic when post expiry
       type: Date,
       required: true,
     },
+    lastActivityAt: {
+    type: Date,
+    default: Date.now
+}
   },
   {
     timestamps: true,
