@@ -225,41 +225,34 @@ async function leaveRoom(roomCode, userId) {
     }
     return room;
 }
-// async function startGame(roomCode, userId) {
+const Room = require("../models/room.model");
+const gameService = require("./game.service");
 
-//     const room = await Room.findOne({
-//         roomCode
-//     });
+async function startGame(roomCode, userId) {
+    const room = await Room.findOne({ roomCode });
 
-//     if (!room) {
-//         throw new Error("Room not found");
-//     }
+    if (!room) {
+        throw new Error("Room not found");
+    }
 
-//     if (
-//         room.hostId.toString() !==
-//         userId.toString()
-//     ) {
-//         throw new Error(
-//             "Only host can start game"
-//         );
-//     }
+    if (room.hostId.toString() !== userId.toString()) {
+        throw new Error("Only host can start game");
+    }
 
-//     if (room.gameStatus === "in-progress") {
-//         throw new Error(
-//             "Game already in progress"
-//         );
-//     }
+    if (room.gameStatus === "in-progress") {
+        throw new Error("Game already in progress");
+    }
 
-//     if (room.players.length < 2) {
-//         throw new Error(
-//             "Minimum 2 players required"
-//         );
-//     }
+    if (room.players.length < 2) {
+        throw new Error("At least 2 players required");
+    }
 
-//     room.gameStatus = "in-progress";
+    const game = await gameService.initiateGame(room);
 
-//     await room.save();
+    room.gameStatus = "in-progress";
+    await room.save();
 
-//     return room;
-// }
-module.exports={createRoom,getRoomDetails,joinRoom,transferHost,leaveRoom};
+    return game;
+}
+
+module.exports={createRoom,getRoomDetails,joinRoom,transferHost,leaveRoom,startGame};

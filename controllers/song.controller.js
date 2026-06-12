@@ -2,7 +2,7 @@ const songService = require('../services/song.service');
 
 exports.getUnsyncedLyrics = async (req, res) => {
   try {
-    const { track_name , artist_name} = req.query;
+    const { track_name , artist_name} = req.body;
 
     if(!track_name || !artist_name){
       return res.status(400).json({
