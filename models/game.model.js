@@ -6,9 +6,8 @@ const GameSchema = new Schema(
   {
     roomId: { type: Schema.Types.ObjectId, ref: 'Room', required: true, index: true },
 
-    gameState: { type: String, enum: ['starting', 'in-progress', 'ended'], default: 'starting' },
+    gameState: { type: String, enum: ['in-progress', 'ended'] },//starting before game starts,in-progress after round starts,ended when game ends and displays stat page
 
-    roundNumber: { type: Number, default: 0 },
     currentTurnIndex: { type: Number, default: 0 },
 
     players: [
@@ -17,13 +16,12 @@ const GameSchema = new Schema(
         state: {
           type: String,
           enum: [
-            'choosing-song',
-            'choosing-hint',
-            'generating',
-            'done',
-            'stand-by',
-            'guessing',
-            'guessed'
+            'choosing-song',//only a chooser state
+            'choosing-hint',//only a chooser state
+            'stand-by',//when guessers are waiting for chooser or when chooser is waiting for guesser
+            'guessing',//a guesser state
+            'guessed',//a guesser state
+            'timed-out'//when players couldnt guess after 2 mins passing
           ],
           default: 'stand-by'
         },
@@ -35,22 +33,53 @@ const GameSchema = new Schema(
     stats: [
       {
         playerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-        totalGuessTimeMs: { type: Number, default: 0 }
+        totalGuessTimeMs: { type: Number, default: 0 },
+        correctGuesses: { type: Number, default: 0 },
+
+        songsChosen: [
+          {
+            songTitle: String,
+            artistName: String
+          }
+        ],
+
+        songsGuessedCorrectly: [
+          {
+            songTitle: String,
+            artistName: String
+          }
+        ]
       }
     ],
-
-    currentRound: {
+    pendingTurn: {//temporarily stores the songTitle,artistname and playerHint which will get persisted in turns if successful
+      songTitle: String,
+      artistName: String,
+      playerHint: String,
+      status: {
+        type: String,
+        enum: [
+          'pending',
+          'generating'
+        ],
+        default: 'pending'
+      },
+      retryCount: {
+        type: Number,
+        default: 0
+      }
+    },
+    turns: [{
       chooserPlayerId: { type: Schema.Types.ObjectId, ref: 'User' },
       songTitle: { type: String },
+      artistName: { type: String },
       lyrics: { type: String },
       playerHint: { type: String },
       aiHint: { type: String },
       status: {
         type: String,
-        enum: ['waiting-song', 'waiting-hint', 'generating', 'ready'],
-        default: 'waiting-song'
-      }
-    }
+        enum: ['generating', 'ready', 'failed'],//generating is when response is being fetched,ready is when response fetched and failed is wehn response couldnt be fetched
+      },
+    }]
   },
   { timestamps: true }
 )
