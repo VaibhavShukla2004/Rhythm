@@ -72,3 +72,36 @@ exports.transferHost = async (req, res, next) => {
         next(err);
     }
 };
+
+
+
+exports.startGame=async (req, res, next)=> {
+
+    try {
+
+        const {room,roomCode } = req.params;
+
+        const userId = req.user.userId;
+
+        const game = await roomService.startGame(
+            roomCode,
+            userId
+        );
+
+        res.status(201).json({
+            success: true,
+            message: 'Game started successfully',
+            room,
+            game,
+        });
+
+    } catch (error) {
+
+        next(error);
+
+    }
+}
+
+module.exports = {
+    startGame
+};

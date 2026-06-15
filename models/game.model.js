@@ -36,14 +36,14 @@ const GameSchema = new Schema(
         totalGuessTimeMs: { type: Number, default: 0 },
         correctGuesses: { type: Number, default: 0 },
 
-    songsChosen: [
+    songsChosen: [//we havent implemented this yet
       {
         songTitle: String,
         artistName: String
       }
     ],
 
-    songsGuessedCorrectly: [
+    songsGuessedCorrectly: [//havent implemented this yet
       {
         songTitle: String,
         artistName: String
@@ -51,17 +51,20 @@ const GameSchema = new Schema(
     ]
       }
     ],
+
 pendingTurn: {//temporarily stores the songTitle,artistname and playerHint which will get persisted in turns if successful
     songTitle: String,
     artistName: String,
     playerHint: String,
+    aiResponse: String,
       status: {
     type: String,
+    startedAt: Date,//stores the time at which chooser timer starts,easier to calculate time remaining for turn and also can recover after server restart
     enum: [
-      'pending',
-      'generating'
+      'generating',
+      'success',
+      'failing'//I'm thinking null when nothing,'generating' when generation started,'succes' if ready,'failed' if could not.
     ],
-    default: 'pending'
   },
     retryCount: {
         type: Number,
@@ -77,7 +80,7 @@ pendingTurn: {//temporarily stores the songTitle,artistname and playerHint which
       aiHint: { type: String },
       status: {
         type: String,
-        enum: ['generating', 'ready','failed'],//generating is when response is being fetched,ready is when response fetched and failed is wehn response couldnt be fetched
+        enum: ['ready','failed'],//generating is when response is being fetched,ready is when response fetched and failed is wehn response couldnt be fetched
       },
     }]
   },

@@ -247,12 +247,15 @@ async function startGame(roomCode, userId) {
         throw new Error("At least 2 players required");
     }
 
-    const game = await gameService.initiateGame(room);
+    const game = await gameService.startGame(room);
 
     room.gameStatus = "in-progress";
     await room.save();
 
-    return game;
+    return {
+    room,
+    game
+};
 }
 
 module.exports={createRoom,getRoomDetails,joinRoom,transferHost,leaveRoom,startGame};
