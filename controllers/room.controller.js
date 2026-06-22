@@ -83,10 +83,7 @@ exports.startGame=async (req, res, next)=> {
 
         const userId = req.user.userId;
 
-        const game = await roomService.startGame(
-            roomCode,
-            userId
-        );
+        const game = await gameorchestrator.handleGameStart(roomCode,userId);
 
         res.status(201).json({
             success: true,
@@ -96,12 +93,10 @@ exports.startGame=async (req, res, next)=> {
         });
 
     } catch (error) {
-
         next(error);
-
     }
 }
 
-module.exports = {
-    startGame
-};
+// module.exports = {
+//startGame,createRoom,transferHost,leaveRoom,joinRoom,getRoomDetails
+// };

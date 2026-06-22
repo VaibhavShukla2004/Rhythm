@@ -1,12 +1,11 @@
-
 const mongoose = require('mongoose')
 const { Schema } = mongoose
 
 const GameSchema = new Schema(
   {
     roomId: { type: Schema.Types.ObjectId, ref: 'Room', required: true, index: true },
-
-    gameState: { type: String, enum: ['in-progress', 'ended']},//starting before game starts,in-progress after round starts,ended when game ends and displays stat page
+   
+    gameState: { type: String, enum: ['in-progress', 'ended'],default: 'in-progress'},//starting before game starts,in-progress after round starts,ended when game ends and displays stat page
 
     currentTurnIndex: { type: Number, default: 0 },
 
@@ -34,7 +33,7 @@ const GameSchema = new Schema(
       {
         playerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
         totalGuessTimeMs: { type: Number, default: 0 },
-        correctGuesses: { type: Number, default: 0 },
+       guessesCorrect: { type: Number, default: 0 },
 
     songsChosen: [//we havent implemented this yet
       {
@@ -71,6 +70,33 @@ pendingTurn: {//temporarily stores the songTitle,artistname and playerHint which
         default: 0
     }
 },
+finishedAt: {
+    type: Date
+},
+finalResults: [
+    {
+        playerId: {
+            type: Schema.Types.ObjectId,
+            ref: 'User'
+        },
+
+        score: {
+            type: Number
+        },
+
+        rank: {
+            type: Number
+        },
+
+        guessesCorrect: {
+            type: Number
+        },
+
+        totalGuessTimeMs: {
+            type: Number
+        }
+    }
+],
     turns: [{
       chooserPlayerId: { type: Schema.Types.ObjectId, ref: 'User' },
       songTitle: { type: String },

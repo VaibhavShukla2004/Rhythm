@@ -1,7 +1,5 @@
 const Game = require("../models/game.model");
 const {getUnsyncedLyrics} = require("../services/song.service");
-const CHOOSER_TIME_LIMIT = 120000;
-const gameTimers = {};
 
 //the methods are in flow
 async function startGame(room) {//to set up game document-setting game to in-progress,putting in roomId and other stuff
@@ -16,16 +14,13 @@ async function startGame(room) {//to set up game document-setting game to in-pro
 
     const game = await Game.create({//saves it to db
         roomId: room._id,
-
+        roomCode: room._roomCode,
         gameState: "in-progress",
-
         roundNumber: 0,
         currentTurnIndex: 0,
-
         players,
         stats
     });
-
     return game;//the game document goes to room.service.startGame.
 }
 
@@ -45,35 +40,8 @@ async function startTurn(gameId) {//to just set chooser and his state to
     chooser.state = "choosing-song";//sets state
     game.pendingTurn.startedAt =new Date();//temporary; to check if two mins are up or nah
     await game.save();
-    
-    clearTimeout(gameTimers[gameId]);//idk what this is yet.Will find out
-    gameTimers[gameId] = setTimeout(() => {
-        chooserTimedOut(gameId);
-    },
-    CHOOSER_TIME_LIMIT
-);
+
     return game;
-}
-
-async function chooserTimedOut(gameId) {//just read it,pretty explainatory
-    const game = await Game.findById(gameId);
-    if (!game) {
-        return;
-    }
-
-    game.currentTurnIndex++;
-
-    if (game.currentTurnIndex >=game.players.length) {
-        return endGame(gameId);
-    }
-
-    game.pendingTurn = {};
-    game.players.forEach(player => {
-        player.state = "stand-by";
-    });
-
-    await game.save();
-    return startTurn(gameId);
 }
 
 async function submitSong(gameId,playerId,songTitle,artistName) {//chooser submits song
@@ -112,42 +80,31 @@ async function submitSong(gameId,playerId,songTitle,artistName) {//chooser submi
     return game;
 }
 
-async function submitHint(gameId,playerId,playerHint) {//chooser submits hint
+async function submitHint(gameId,playerId,playerHint) {
 
-    const game = await Game.findById(gameId);
+    const game =await Game.findById(gameId);
 
     if (!game) {
         throw new Error("Game not found");
     }
 
-    const chooser =
-        game.players[game.currentTurnIndex];
+    const chooser =game.players[game.currentTurnIndex];
 
-    if (
-        chooser.playerId.toString() !==
-        playerId.toString()
-    ) {
-        throw new Error(
-            "Only current chooser can submit hint"
-        );
+    if (chooser.playerId.toString() !==playerId.toString()) {
+        throw new Error("Only current chooser can submit hint");
     }
 
-    if (
-        chooser.state !== "choosing-hint"
-    ) {
-        throw new Error(
-            "Player not in choosing-hint state"
-        );
+    if (chooser.state !=="choosing-hint") {
+        throw new Error("Player not in choosing-hint state");
     }
 
     if (!playerHint) {
-        throw new Error(
-            "Hint is required"
-        );
+        throw new Error("Hint is required");
     }
-    game.pendingTurn.playerHint = playerHint;
-    game.pendingTurn.status ="pending";
 
+    game.pendingTurn.playerHint =playerHint;
+
+    chooser.state ="stand-by";
     await game.save();
 
     return game;
@@ -181,8 +138,6 @@ async function createTurn(gameId) {
 
     const {songTitle,artistName,playerHint} = game.pendingTurn;//get this information so you can send it to lyrics and ai API
 
-    try {
-
         game.pendingTurn.status ="generating";
 
         const lyrics = await fetchLyrics(songTitle,artistName);//first fetch lyrics
@@ -200,34 +155,12 @@ async function createTurn(gameId) {
             aiHint: aiResponse,
             status: "ready"
         });
-
+       game.pendingTurn.status = "success";
         await game.save();
-        clearTimeout(gameTimers[gameId]);
-        return await startGuessingPhase(gameId);//Now call the startGuessingPhase if no errors
-
-    } catch (error) {//else if errors
-
-        game.pendingTurn.retryCount++;
-
-        if (game.pendingTurn.retryCount < 3) {
-            game.pendingTurn.status = "pending";
-            await game.save();
-            return await startTurn(gameId);//retyr again if you are within your limits to retry
-        }
-
-         game.currentTurnIndex++;//else bro just skip their turn now. Set pendingTurn to empty,
-        if (game.currentTurnIndex >=game.players.length) {
-       return await endGame(gameId);
-}
-        game.pendingTurn = {};
-
-        await game.save();
-
-        return await startTurn(gameId);
-    }
+        return game;
 }
 
-async function startGuessingPhase(gameId) {//initially all guessers in "stand-by" now they are in guessing
+async function startGuessingPhase(gameId) {//initially all guessers in "stand-by", now they are in guessing
 
     const game = await Game.findById(gameId);
     const chooserId =game.players[game.currentTurnIndex].playerId.toString();
@@ -235,9 +168,11 @@ async function startGuessingPhase(gameId) {//initially all guessers in "stand-by
 
         if (player.playerId.toString() ===chooserId) {
             player.state = "stand-by";
-        } else {
+        }
+         else {
             player.state = "guessing";
         }
+        player.guessStartedAt =new Date();
     });
     await game.save();
     return game;
@@ -263,26 +198,31 @@ async function submitGuess(gameId,playerId,guessedSong,guessedArtist) {
     const songMatches =guessedSong.trim().toLowerCase() ===currentTurn.songTitle.trim().toLowerCase();
     const artistMatches =guessedArtist.trim().toLowerCase() ===currentTurn.artistName.trim().toLowerCase();
 
-    if (songMatches &&artistMatches) {//only if you guess correctly
+    if (songMatches &&artistMatches) { //only if you guess correctly
         player.state = "guessed";
         const stat = game.stats.find(
                 stat =>
                     stat.playerId.toString() === playerId.toString()
             );
 
-        if (stat) {//your stats updated
+        if (stat) {//your guessCorrect stats updated
             stat.guessesCorrect += 1;
         }
-
-        await game.save();//saved
-        return completeTurn(gameId);//then checked if everybody is done yet so we can start next turn
-    }
-    return {correct: false};
+        await game.save();
+        return {
+            correct: true,
+            game
+        };
+    }//else js return false
+    return {
+        correct: false,
+        game
+    };
 }
 
-async function completeTurn(gameId) {//this satisfies the test case where people finish before time
+async function completeTurn(gameId) {//this satisfies the test case where everybody "guessed" but before time
     const game = await Game.findById(gameId);
-    const allDone = game.players.every(player => {
+    const allDone = game.players.every(player => {//yo ion understand this properly but js gpt it,shld do
 
             const isChooser = player.playerId.toString() === game.players[game.currentTurnIndex].playerId.toString();
 
@@ -293,22 +233,61 @@ async function completeTurn(gameId) {//this satisfies the test case where people
             return (player.state ==="guessed");
         });
 
-    if (!allDone) {
-        return game;
+    return {allDone,game};
+}
+
+async function endGame(gameId) {
+
+    const game =await Game.findById(gameId);
+
+    if (!game) {
+        throw new Error('Game not found');
     }
 
-    game.currentTurnIndex++;//if everybody done,then start next turn
+    const results =
+        game.stats.map(
+            stat => {
 
-    if (game.currentTurnIndex >=game.players.length) {
-        return endGame(gameId);
-    }
-    game.players.forEach(player => {
-        player.state = "stand-by";
-    });
+                const score =(stat.guessesCorrect * 100)
+                    -
+                    (stat.totalGuessTimeMs /1000);
+
+                return {
+                    playerId:stat.playerId,
+
+                    guessesCorrect:stat.guessesCorrect,
+
+                    totalGuessTimeMs:stat.totalGuessTimeMs,
+
+                    score
+                };
+            }
+        );
+
+    results.sort(
+        (a, b) =>
+            b.score -
+            a.score
+    );
+
+    results.forEach(
+        (result, index) => {
+
+            result.rank =index + 1;
+        }
+    );
+
+    game.finalResults =results;
+
+    game.gameState ='ended';
+
+    game.finishedAt = new Date();
 
     await game.save();
-    return startTurn(gameId);
+
+    return game;
 }
+
 module.exports = {
-    startGame
+    startGame,startTurn,submitSong,submitHint,fetchLyrics,generateAiHint,createTurn,startGuessingPhase,submitGuess, endGame
 };
