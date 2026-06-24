@@ -1,4 +1,9 @@
-const { GoogleGenAI } = require("@google/genai");
+import { GoogleGenAI } from "@google/genai";
+const promptTemplate = `You are modifying song lyrics for a lyrics guessing game.
+Rules:
+- Rewrite the lyrics according to the user's hint.
+- Keep roughly the same rhythm and structure.
+- Return ONLY the modified lyrics`;
 
 //creates gemini client 
 const client = new GoogleGenAI({
@@ -6,7 +11,7 @@ const client = new GoogleGenAI({
 });
 
 //generates payload which is the final string to be sent to gemini
-function generatePayload(promptTemplate, lyrics, hint) {
+function generatePayload(lyrics, hint) {
     const prompt = `
 You are supposed to modify the lyrics as per the hint specified and return them.
 
@@ -36,5 +41,3 @@ async function getAIResponse(payload) {
         throw e;
     }
 }
-
-module.exports = { generatePayload, getAIResponse };
