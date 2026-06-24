@@ -1,3 +1,4 @@
+// Run this test file: npm test -- tests/services/song.service.test.js
 const mockGetUnsynced = jest.fn();
 
 jest.mock('lrclib-api', () => ({

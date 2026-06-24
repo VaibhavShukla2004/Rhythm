@@ -1,3 +1,4 @@
+// Run this test file: npm test -- tests/services/ai.service.test.js
 jest.mock('@google/genai', () => ({
   GoogleGenAI: jest.fn().mockImplementation(() => ({
     models: {

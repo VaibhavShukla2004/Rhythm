@@ -1,3 +1,4 @@
+// Run this test file: npm test -- tests/controllers/user.controller.test.js
 const userService = require('../../services/user.service');
 const { getUsers, getUserById } = require('../../controllers/user.controller');
 

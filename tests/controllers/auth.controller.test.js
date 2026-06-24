@@ -1,3 +1,4 @@
+// Run this test file: npm test -- tests/controllers/auth.controller.test.js
 const authService = require('../../services/auth.service');
 const { register, login } = require('../../controllers/auth.controller');
 

@@ -1,3 +1,4 @@
+// Run this test file: npm test -- tests/controllers/song.controller.test.js
 const songService = require('../../services/song.service');
 const { getUnsyncedLyrics } = require('../../controllers/song.controller');
 

@@ -1,3 +1,4 @@
+// Run this test file: npm test -- tests/services/auth.service.test.js
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const userModel = require('../../models/user.model');
