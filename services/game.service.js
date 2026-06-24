@@ -1,6 +1,6 @@
 const Game = require("../models/game.model");
 const {getUnsyncedLyrics} = require("../services/song.service");
-
+const {generatePayload,getAIResponse}=require("../services/ai.service.js")
 //the methods are in flow
 async function startGame(room) {//to set up game document-setting game to in-progress,putting in roomId and other stuff
 
@@ -121,8 +121,16 @@ async function fetchLyrics(songTitle,artistName) {
 }
 
 async function generateAiHint(lyrics,playerHint) {
+    const aiPayLoad=await generatePayload(lyrics,playerHint);
+    try{
+    const aiResponse= await getAIResponse(aiPayload); 
+    return aiResponse;
+        }
+    catch(error){
+        throw new Error("error in aiReponse");
+    }
 
-    // TODO:
+   // TODO:
     // Call AI API
 
     return "Dummy AI Hint";
