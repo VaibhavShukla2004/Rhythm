@@ -1,12 +1,11 @@
-
 const mongoose = require('mongoose')
 const { Schema } = mongoose
 
 const GameSchema = new Schema(
   {
     roomId: { type: Schema.Types.ObjectId, ref: 'Room', required: true, index: true },
-
-    gameState: { type: String, enum: ['in-progress', 'ended'] },//starting before game starts,in-progress after round starts,ended when game ends and displays stat page
+   
+    gameState: { type: String, enum: ['in-progress', 'ended'],default: 'in-progress'},//starting before game starts,in-progress after round starts,ended when game ends and displays stat page
 
     currentTurnIndex: { type: Number, default: 0 },
 
@@ -34,40 +33,70 @@ const GameSchema = new Schema(
       {
         playerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
         totalGuessTimeMs: { type: Number, default: 0 },
-        correctGuesses: { type: Number, default: 0 },
+       guessesCorrect: { type: Number, default: 0 },
 
-        songsChosen: [
-          {
-            songTitle: String,
-            artistName: String
-          }
-        ],
-
-        songsGuessedCorrectly: [
-          {
-            songTitle: String,
-            artistName: String
-          }
-        ]
+    songsChosen: [//we havent implemented this yet
+      {
+        songTitle: String,
+        artistName: String
       }
     ],
-    pendingTurn: {//temporarily stores the songTitle,artistname and playerHint which will get persisted in turns if successful
-      songTitle: String,
-      artistName: String,
-      playerHint: String,
+
+    songsGuessedCorrectly: [//havent implemented this yet
+      {
+        songTitle: String,
+        artistName: String
+      }
+    ]
+      }
+    ],
+
+pendingTurn: {//temporarily stores the songTitle,artistname and playerHint which will get persisted in turns if successful
+    songTitle: String,
+    artistName: String,
+    playerHint: String,
+    aiResponse: String,
       status: {
-        type: String,
-        enum: [
-          'pending',
-          'generating'
-        ],
-        default: 'pending'
-      },
-      retryCount: {
+    type: String,
+    startedAt: Date,//stores the time at which chooser timer starts,easier to calculate time remaining for turn and also can recover after server restart
+    enum: [
+      'generating',
+      'success',
+      'failing'//I'm thinking null when nothing,'generating' when generation started,'succes' if ready,'failed' if could not.
+    ],
+  },
+    retryCount: {
         type: Number,
         default: 0
-      }
-    },
+    }
+},
+finishedAt: {
+    type: Date
+},
+finalResults: [
+    {
+        playerId: {
+            type: Schema.Types.ObjectId,
+            ref: 'User'
+        },
+
+        score: {
+            type: Number
+        },
+
+        rank: {
+            type: Number
+        },
+
+        guessesCorrect: {
+            type: Number
+        },
+
+        totalGuessTimeMs: {
+            type: Number
+        }
+    }
+],
     turns: [{
       chooserPlayerId: { type: Schema.Types.ObjectId, ref: 'User' },
       songTitle: { type: String },
@@ -77,7 +106,7 @@ const GameSchema = new Schema(
       aiHint: { type: String },
       status: {
         type: String,
-        enum: ['generating', 'ready', 'failed'],//generating is when response is being fetched,ready is when response fetched and failed is wehn response couldnt be fetched
+        enum: ['ready','failed'],//generating is when response is being fetched,ready is when response fetched and failed is wehn response couldnt be fetched
       },
     }]
   },

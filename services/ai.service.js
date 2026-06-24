@@ -13,8 +13,6 @@ const client = new GoogleGenAI({
 //generates payload which is the final string to be sent to gemini
 function generatePayload(lyrics, hint) {
     const prompt = `
-You are supposed to modify the lyrics as per the hint specified and return them.
-
 ${promptTemplate}
 
 Hint:
@@ -26,6 +24,7 @@ ${lyrics}
 
     return { prompt };
 }
+
 
 //sends payload to AI and gets AI response
 async function getAIResponse(payload) {
@@ -41,3 +40,4 @@ async function getAIResponse(payload) {
         throw e;
     }
 }
+

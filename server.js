@@ -1,11 +1,16 @@
-const express = require('express');
+const http = require('http');
 const cors = require('cors');
+const express = require('express');
+const {initializeSocket} = require('./config/socket');
+const {registerSocketHandlers} = require('./sockets/socket.handler');
+
 require('dotenv').config();
 const connectDB = require('./config/db');//import
 
 connectDB();//then run
 const app = express();
 const PORT = process.env.PORT || 3000;
+const server = http.createServer(app);
 
 app.use(cors());
 app.use(express.json());
@@ -23,7 +28,9 @@ app.use('/auth',authRoutes);//if request starts with /auth, it will be handled b
 app.use('/user',userRoutes);
 app.use('/song',songRoutes);
 app.use('/room',roomRoutes);
-app.listen(PORT, () => {
+const io = initializeSocket(server);
+registerSocketHandlers(io);
+server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);//callback function that runs when server starts
 }); //here to router,middleware if required,then controller then service and if an error somewhere in the middle then error handled 
 

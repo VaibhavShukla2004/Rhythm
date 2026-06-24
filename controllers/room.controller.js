@@ -1,5 +1,5 @@
 const roomService = require('../services/room.service');
-
+const gameOrchestrator = require('../service/game.orchestrator'); 
 exports.createRoom = async (req, res, next) => {
     try {
         const { maxPlayers } = req.body;
@@ -72,3 +72,31 @@ exports.transferHost = async (req, res, next) => {
         next(err);
     }
 };
+
+
+
+exports.startGame=async (req, res, next)=> {
+
+    try {
+
+        const {room,roomCode } = req.params;
+
+        const userId = req.user.userId;
+
+        const game = await gameorchestrator.handleGameStart(roomCode,userId);
+
+        res.status(201).json({
+            success: true,
+            message: 'Game started successfully',
+            room,
+            game,
+        });
+
+    } catch (error) {
+        next(error);
+    }
+}
+
+// module.exports = {
+//startGame,createRoom,transferHost,leaveRoom,joinRoom,getRoomDetails
+// };

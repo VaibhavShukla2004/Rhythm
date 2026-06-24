@@ -1,11 +1,9 @@
 const Room = require("../models/room.model");
+const gameService = require("./game.service");
 
 async function generateRoomCode() {
-
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-
     while (true) {//keeps on trying until unique code
-
         let code = "";
 
         for (let i = 0; i < 6; i++) {
@@ -29,18 +27,13 @@ const alreadyHostInAnotherRoom = await Room.findOne({
     hostId
 });
 
-if (alreadyHostInAnotherRoom) {
-    throw new Error(
-        "You are already hosting a room"
-    );
-}
+if (alreadyHostInAnotherRoom) throw new Error("You are already hosting a room");
+
     const roomCode = await generateRoomCode();
     if (maxPlayers < 2 || maxPlayers > 10) {
     throw new Error("Invalid room size");
 }
-    const expiresAt = new Date(
-        Date.now() + 10 * 60 * 1000
-    );
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
     const room = await Room.create({
         roomCode,
@@ -150,25 +143,15 @@ async function transferHost(roomCode, newHostId = null,currentUserId = null) {//
     }
 
     // Manual transfer
-if (
-    room.hostId.toString() !==
-    currentUserId.toString()
-) {
-    throw new Error(
-        "Only host can transfer host"
-    );
+if (room.hostId.toString() !==currentUserId.toString()) {
+    throw new Error("Only host can transfer host");
 }
 
 const newHostExists = room.players.some(
-    player =>
-        player.userId.toString() ===
-        newHostId.toString()
-);
+    player =>player.userId.toString() ===newHostId.toString());
 
     if (!newHostExists) {
-        throw new Error(
-            "New host must be in room"
-        );
+        throw new Error("New host must be in room");
     }
 
     room.hostId = newHostId;
@@ -189,33 +172,22 @@ async function leaveRoom(roomCode, userId) {
     }
 
     const playerExists = room.players.some(
-        player =>
-            player.userId.toString() ===
-            userId.toString()
+        player =>player.userId.toString() ===userId.toString()
     );
 
     if (!playerExists) {
-        throw new Error(
-            "Player not in room"
-        );
+        throw new Error("Player not in room");
     }
 
     if (room.gameStatus === "in-progress") {
-        throw new Error(
-            "Cannot leave room during game"
-        );
+        throw new Error("Cannot leave room during game");
     }
 
     room.players = room.players.filter(//removes player where player.userId matches userId of leaver
-        player =>
-            player.userId.toString() !==
-            userId.toString()
+        player =>player.userId.toString() !==userId.toString()
     );
     await room.save();   
-    if (
-        room.hostId.toString() ===
-        userId.toString()
-    ) {
+    if (room.hostId.toString() ===userId.toString()) {
         await transferHost(roomCode);
         const updatedRoom = await Room.findOne({
         roomCode
@@ -225,41 +197,25 @@ async function leaveRoom(roomCode, userId) {
     }
     return room;
 }
-// async function startGame(roomCode, userId) {
+async function startGame(roomCode, userId) {
+    const room = await Room.findOne({ roomCode });
 
-//     const room = await Room.findOne({
-//         roomCode
-//     });
+    if (!room) throw new Error("Room not found");
 
-//     if (!room) {
-//         throw new Error("Room not found");
-//     }
+    if (room.hostId.toString() !== userId.toString()) throw new Error("Only host can start game");
 
-//     if (
-//         room.hostId.toString() !==
-//         userId.toString()
-//     ) {
-//         throw new Error(
-//             "Only host can start game"
-//         );
-//     }
+    if (room.gameStatus === "in-progress") throw new Error("Game already in progress");
 
-//     if (room.gameStatus === "in-progress") {
-//         throw new Error(
-//             "Game already in progress"
-//         );
-//     }
+    if (room.players.length < 2) {
+        throw new Error("At least 2 players required");
+    }
 
-//     if (room.players.length < 2) {
-//         throw new Error(
-//             "Minimum 2 players required"
-//         );
-//     }
+    const game = await gameService.startGame(room);
 
-//     room.gameStatus = "in-progress";
+    room.gameStatus = "in-progress";
+    await room.save();
 
-//     await room.save();
+    return {room,game};
+}
 
-//     return room;
-// }
-module.exports={createRoom,getRoomDetails,joinRoom,transferHost,leaveRoom};
+module.exports={createRoom,getRoomDetails,joinRoom,transferHost,leaveRoom,startGame};

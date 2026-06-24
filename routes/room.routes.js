@@ -15,4 +15,5 @@ router.post("/leave", authMiddleware, roomController.leaveRoom);
 router.post(
     "/transfer-host",authMiddleware,roomController.transferHost);
 
+router.post("/start-game",authMiddleware,roomController.startGame);
 module.exports = router;
