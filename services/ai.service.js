@@ -62,17 +62,29 @@ ${hint}
 // Get AI response from the OpenAI service
 const getAIResponse = async (payload) => {
   try {
-    const client = new OpenAI({ baseURL: endpoint, apiKey: token });
-
-    const response = await client.chat.completions.create({
-      messages: [
-        { role: "system", content: payload.systemPrompt },
-        { role: "user", content: payload.userMessage }
-      ],
-      model: model
+    const client = new OpenAI({
+      baseURL: endpoint,
+      apiKey: token
     });
 
-    return response.choices[0].message.content;
+    const response = await client.chat.completions.create({
+      model: model,
+      messages: [
+        {
+          role: "system",
+          content: payload.systemPrompt
+        },
+        {
+          role: "user",
+          content: payload.userMessage
+        }
+      ],
+      response_format: {
+        type: "json_object"
+      }
+    });
+
+    return JSON.parse(response.choices[0].message.content).modifiedLyrics;
   } catch (error) {
     console.error("AI Service Error:", error);
     throw error;
