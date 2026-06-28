@@ -1,7 +1,5 @@
 const aiService = require('../services/ai.service');
 
-// POST /ai/modify-lyrics
-// Body: { lyrics: string, hint: string }
 exports.modifyLyrics = async (req, res, next) => {
   try {
     const { lyrics, hint } = req.body;
@@ -10,13 +8,11 @@ exports.modifyLyrics = async (req, res, next) => {
       return res.status(400).json({ message: 'lyrics and hint required' });
     }
 
-    const payload = aiService.generatePayload(lyrics, hint);
-    const aiText = await aiService.getAIResponse(payload);
+    // The controller delegates the entire process to a single service method
+    const aiText = await aiService.getModifiedLyrics(lyrics, hint);
 
     return res.status(200).json({ aiHint: aiText });
   } catch (err) {
-    next(err);
+    next(err); // Let the global error handler catch it
   }
 };
-
-

@@ -4,7 +4,7 @@ const token = process.env["GITHUB_TOKEN"];
 const endpoint = "https://models.github.ai/inference";
 const model = "gpt-4o";
 
-// Generate a payload for the AI service
+// Private helper function (no longer exported)
 const generatePayload = (lyrics, hint) => {
   return {
     systemPrompt: `
@@ -59,9 +59,11 @@ ${hint}
   };
 };
 
-// Get AI response from the OpenAI service
-const getAIResponse = async (payload) => {
+// Main service function that handles the full workflow
+const getModifiedLyrics = async (lyrics, hint) => {
   try {
+    const payload = generatePayload(lyrics, hint);
+    
     const client = new OpenAI({
       baseURL: endpoint,
       apiKey: token
@@ -87,13 +89,11 @@ const getAIResponse = async (payload) => {
     return JSON.parse(response.choices[0].message.content).modifiedLyrics;
   } catch (error) {
     console.error("AI Service Error:", error);
-    throw error;
+    // You can throw a more generic error here if you want to hide OpenAI specifics from the controller
+    throw new Error("Failed to process lyrics through AI service."); 
   }
 };
 
-
 module.exports = {
-  generatePayload,
-  getAIResponse
+  getModifiedLyrics
 };
-
