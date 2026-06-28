@@ -1,5 +1,7 @@
 const rateLimit = require("express-rate-limit");
 
+
+//change the max as needed to rate limit the AI requests per minute.
 const aiLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
   max: 5,
