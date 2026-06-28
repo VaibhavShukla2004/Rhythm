@@ -7,15 +7,23 @@ jest.mock('@google/genai', () => ({
   }))
 }), { virtual: true });
 
-const { generatePayload } = require('../../services/ai.service');
+const { generatePayload, generateModifyLyricsPayload } = require('../../services/ai.service');
 
 describe('ai.service', () => {
-  it('should include the instruction and hint in generated payload', () => {
-    const payload = generatePayload('Custom prompt', 'Some lyrics', 'Make it funny');
+  it('should generate payload for hint generation correctly', () => {
+    const payload = generatePayload('Some lyrics', 'Make it funny');
 
-    expect(payload.prompt).toContain('You are supposed to modify the lyrics as per the hint specified and return them.');
-    expect(payload.prompt).toContain('Custom prompt');
-    expect(payload.prompt).toContain('Hint:');
-    expect(payload.prompt).toContain('Some lyrics');
+    expect(payload.systemPrompt).toBe('You are a helpful music hint assistant.');
+    expect(payload.userMessage).toContain('Some lyrics');
+    expect(payload.userMessage).toContain('Make it funny');
+  });
+
+  it('should generate payload for lyric modification correctly', () => {
+    const payload = generateModifyLyricsPayload('Some lyrics', 'make it about food');
+
+    expect(payload.systemPrompt).toContain('lyric modification assistant');
+    expect(payload.systemPrompt).toContain('Return ONLY the modified lyrics');
+    expect(payload.userMessage).toContain('Some lyrics');
+    expect(payload.userMessage).toContain('make it about food');
   });
 });

@@ -26,7 +26,7 @@ exports.login = async (email, password) => {
   const token = jwt.sign(
     { userId: user._id },//// Payload (data to store in the token).ALso check docs page 6.
     process.env.JWT_SECRET,//// Your secret key from the .env file.so verifying(happens at the auth middleware) is basically matching decoded info with the info encoded at login, to do all this we need to unlock the token using the jwt secret key
-    { expiresIn: '1h' }  // Expiration time
+    { expiresIn: '7d' }  // Expiration time
   );
 
   return token;

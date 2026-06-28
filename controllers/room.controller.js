@@ -1,5 +1,5 @@
 const roomService = require('../services/room.service');
-const gameOrchestrator = require('../service/game.orchestrator'); 
+const gameOrchestrator = require('../services/game.orchestrator'); 
 exports.createRoom = async (req, res, next) => {
     try {
         const { maxPlayers } = req.body;
@@ -79,16 +79,17 @@ exports.startGame=async (req, res, next)=> {
 
     try {
 
-        const {room,roomCode } = req.params;
+        //was req.params.roomCode but changed to req.body.roomCode because the roomCode is now being sent in the body of the request instead of as a URL parameter. 
+        //This change was made to accommodate the new frontend design where the roomCode is part of the request body when starting a game.
+        const { roomCode } = req.body;
 
         const userId = req.user.userId;
 
-        const game = await gameorchestrator.handleGameStart(roomCode,userId);
+        const game = await gameOrchestrator.handleGameStart(roomCode,userId);
 
         res.status(201).json({
             success: true,
             message: 'Game started successfully',
-            room,
             game,
         });
 

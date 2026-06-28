@@ -150,9 +150,9 @@ async function createTurn(gameId) {
 
         const lyrics = await fetchLyrics(songTitle,artistName);//first fetch lyrics
 
-        const aiResponse =await generateAiHint(lyrics,playerHint);//send to ai
+        const aiResponse ="I'm a dummy AI hint";//send to ai
 
-        game.pendingTurn.aiResponse = aiResponse;//save the ai response to display to guessers
+        game.pendingTurn.aiResponse = "I'm a dummy AI hint";//save the ai response to display to guessers
 
         game.turns.push({
             chooserPlayerId:game.players[game.currentTurnIndex].playerId,
