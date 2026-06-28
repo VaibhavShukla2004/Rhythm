@@ -32,17 +32,9 @@ const getAIResponse = async (payload) => {
   }
 };
 
-// Generate a payload for the AI service to modify lyrics according to a hint
-const generateModifyLyricsPayload = (lyrics, hint) => {
-  return {
-    systemPrompt: "You are a helpful lyric modification assistant. Your job is to modify the provided song lyrics according to the given hint. Return ONLY the modified lyrics and absolutely nothing else. Do not include conversational filler, notes, or markdown formatting blocks (like ```).",
-    userMessage: `Original Lyrics:\n"${lyrics}"\n\nHint:\n"${hint}"`
-  };
-};
 
 module.exports = {
   generatePayload,
-  generateModifyLyricsPayload,
   getAIResponse
 };
 
