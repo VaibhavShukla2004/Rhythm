@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+const { GoogleGenAI } = require("@google/genai");
 const promptTemplate = `You are modifying song lyrics for a lyrics guessing game.
 Rules:
 - Rewrite the lyrics according to the user's hint.

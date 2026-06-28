@@ -1,28 +1,28 @@
 const roomService = require('../services/room.service');
 const gameService = require('../services/game.service');
 const Game = require('../models/game.model');
-const {emitGameUpdated} = require('../utils/socketEmitter');
-const timerManager =require('../utils/timerManager');
+const {emitGameUpdated} = require('../utils/socket.emitter');
+//const timerManager =require('../utils/timerManager');
 
-async function handleGameStart(roomCode, userId) {
+exports.handleGameStart = async (roomCode, userId) => {
     const { room, game } = await roomService.startGame(roomCode,userId);//calling roomService.startGame() which calls gameService.startGame() which returns back doc. After this players are all "stand-by",so states emitted.
     emitGameUpdated(game.roomId,game);
     await startNextTurn(game._id);
 }
 
-async function startNextTurn(gameId) {
+const startNextTurn = async (gameId) => {
 
     const game =await gameService.startTurn(gameId);
 
    emitGameUpdated(game.roomId,game);
     // everybody after here is either "choosing-song" or standby. Orchestrator's handleGameStart stops here.
 
-    timerManager.startChooserTimer(gameId);
+    //timerManager.startChooserTimer(gameId);
 
     return game;
 }
 
-async function handleSongSubmission(gameId,playerId,songTitle,artistName) {//only handles in-time and correct submissions.Frontend wont allow incorrect format,and out of time submissions handle by expiry logic and our submit guess already wont allow anybdy else to submit once index shifts(handles lag edge case)
+exports.handleSongSubmission = async (gameId,playerId,songTitle,artistName) => {//only handles in-time and correct submissions.Frontend wont allow incorrect format,and out of time submissions handle by expiry logic and our submit guess already wont allow anybdy else to submit once index shifts(handles lag edge case)
 
     const game =await gameService.submitSong(gameId,playerId,songTitle,artistName);
 
@@ -38,8 +38,8 @@ async function handleSongSubmission(gameId,playerId,songTitle,artistName) {//onl
     return game;
 }
 
-async function handleHintSubmission(gameId,playerId,playerHint) {
-    timerManager.cancelTimer(gameId);
+exports.handleHintSubmission = async (gameId,playerId,playerHint) => {
+    //timerManager.cancelTimer(gameId);
     const game =await gameService.submitHint(gameId,playerId,playerHint);
 
     // SOCKET.IO
@@ -56,11 +56,12 @@ async function handleHintSubmission(gameId,playerId,playerHint) {
         // people shown their song-guessing states accordingly
 
         // TIMER
-        timerManager.startGuessTimer(gameId);
+        //timerManager.startGuessTimer(gameId);
 
         return guessingGame;
 
     } catch (error) {
+        console.log(error);
         const failedGame =await Game.findById(gameId);
 
         failedGame.pendingTurn.status ="failing";
@@ -74,7 +75,7 @@ async function handleHintSubmission(gameId,playerId,playerHint) {
     }
 }
 
-async function retryTurn(gameId,playerId) {
+exports.retryTurn = async (gameId,playerId) => {
 
     const game =await Game.findById(gameId);
 
@@ -89,13 +90,13 @@ async function retryTurn(gameId,playerId) {
     }
 
     //game.pendingTurn.status ="pending";
-
+    game.pendingTurn={};
     await game.save();
 
     return startNextTurn(gameId);
 }
 
-async function skipTurn(gameId,playerId) {
+exports.skipTurn = async (gameId,playerId) => {
 
     const game =await Game.findById(gameId);
 
@@ -108,8 +109,9 @@ async function skipTurn(gameId,playerId) {
     game.currentTurnIndex++;
 
     if (game.currentTurnIndex >=game.players.length) {
-        timerManager.cancelTimer(gameId);
+       // timerManager.cancelTimer(gameId);
     const finishedGame =await gameService.endGame(gameId);
+    console.log(finishedGame);
     emitGameUpdated(finishedGame.roomId,finishedGame);
     return finishedGame;
     }
@@ -121,7 +123,7 @@ async function skipTurn(gameId,playerId) {
     return startNextTurn(gameId);
 }
 
-async function handleGuessSubmission(gameId,playerId,guessedSong,guessedArtist) {
+exports.handleGuessSubmission = async (gameId,playerId,guessedSong,guessedArtist) => {
     const result =await gameService.submitGuess(gameId,playerId,guessedSong,guessedArtist);
 
     if (!result.correct) {
@@ -133,14 +135,15 @@ async function handleGuessSubmission(gameId,playerId,guessedSong,guessedArtist) 
     const turnResult =await gameService.completeTurn(gameId);
 
     if (!turnResult.allDone) return turnResult.game;
-    timerManager.cancelTimer(gameId);
+    //timerManager.cancelTimer(gameId);
     const game =turnResult.game;
 
     game.currentTurnIndex++;
 
     if (game.currentTurnIndex >=game.players.length) {
-        timerManager.cancelTimer(gameId);
+        //timerManager.cancelTimer(gameId);
    const finishedGame =await gameService.endGame(gameId);
+   console.log(finishedGame);
     emitGameUpdated(finishedGame.roomId,finishedGame);
     return finishedGame;
     }
@@ -153,7 +156,7 @@ async function handleGuessSubmission(gameId,playerId,guessedSong,guessedArtist) 
     return await startNextTurn(gameId);
 }
 
-async function completeGuessTimeoutTurn(gameId) {
+exports.completeGuessTimeoutTurn = async (gameId) => {
 
     const turnResult =await gameService.completeTurn(gameId);
 
@@ -164,8 +167,9 @@ async function completeGuessTimeoutTurn(gameId) {
     game.currentTurnIndex++;
 
     if (game.currentTurnIndex >=game.players.length){
-        timerManager.cancelTimer(gameId);
+        //timerManager.cancelTimer(gameId);
     const finishedGame =await gameService.endGame(gameId);
+    console.log(finishedGame);
     emitGameUpdated(finishedGame.roomId,finishedGame);
     return finishedGame;
 }
@@ -181,3 +185,14 @@ async function completeGuessTimeoutTurn(gameId) {
 
     return startNextTurn(gameId);
 }
+
+module.exports = {
+    handleGameStart: exports.handleGameStart,
+    startNextTurn,
+    handleSongSubmission: exports.handleSongSubmission,
+    handleHintSubmission: exports.handleHintSubmission,
+    retryTurn: exports.retryTurn,
+    skipTurn: exports.skipTurn,
+    handleGuessSubmission: exports.handleGuessSubmission,
+    completeGuessTimeoutTurn: exports.completeGuessTimeoutTurn,
+};

@@ -1,6 +1,6 @@
 const { getIo } = require('../config/socket');
-
-function emitGameUpdated(roomId,game) {
+const Room = require("../models/room.model");
+async function emitGameUpdated(roomId,game) {
     const room = await Room.findById(roomId);
     if (!room) return;
     const io = getIo();

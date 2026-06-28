@@ -1,6 +1,6 @@
 const Game = require("../models/game.model");
 const {getUnsyncedLyrics} = require("../services/song.service");
-const {generatePayload,getAIResponse}=require("../services/ai.service.js")
+//const {generatePayload,getAIResponse}=require("../services/ai.service.js")
 //the methods are in flow
 async function startGame(room) {//to set up game document-setting game to in-progress,putting in roomId and other stuff
 
@@ -14,7 +14,6 @@ async function startGame(room) {//to set up game document-setting game to in-pro
 
     const game = await Game.create({//saves it to db
         roomId: room._id,
-        roomCode: room._roomCode,
         gameState: "in-progress",
         roundNumber: 0,
         currentTurnIndex: 0,
@@ -146,11 +145,11 @@ async function createTurn(gameId) {
 
     const {songTitle,artistName,playerHint} = game.pendingTurn;//get this information so you can send it to lyrics and ai API
 
-        game.pendingTurn.status ="generating";
+        game.pendingTurn.status ="generating";//why is this present?
 
         const lyrics = await fetchLyrics(songTitle,artistName);//first fetch lyrics
 
-        const aiResponse =await generateAiHint(lyrics,playerHint);//send to ai
+        const aiResponse ="dummy"//await generateAiHint(lyrics,playerHint);//send to ai
 
         game.pendingTurn.aiResponse = aiResponse;//save the ai response to display to guessers
 
@@ -163,7 +162,7 @@ async function createTurn(gameId) {
             aiHint: aiResponse,
             status: "ready"
         });
-       game.pendingTurn.status = "success";
+       game.pendingTurn.status = "success";//again need to find out whats up
         await game.save();
         return game;
 }
@@ -192,15 +191,12 @@ async function submitGuess(gameId,playerId,guessedSong,guessedArtist) {
             player =>
                 player.playerId.toString() === playerId.toString()
         );
-    if (!player) {//these are just checks,the frontend would be made as such that these endpoints arent exposed
-        throw new Error(
-            "Player not found"
-        );
-    }
+    if (!player) throw new Error("Player not found");//these are just checks,the frontend would be made as such that these endpoints arent exposed
+    console.log("printing");
+    console.log(player.playerId);
+    console.log(player.state);
     if (player.state !== "guessing") {//same shit here.A guessed player wouldnt be able to submit shit
-        throw new Error(
-            "Player not guessing"
-        );
+        throw new Error("Player not guessing");
     }
     const currentTurn = game.turns[game.turns.length - 1];
     const songMatches =guessedSong.trim().toLowerCase() ===currentTurn.songTitle.trim().toLowerCase();
@@ -286,7 +282,7 @@ async function endGame(gameId) {
     );
 
     game.finalResults =results;
-
+    
     game.gameState ='ended';
 
     game.finishedAt = new Date();
@@ -297,5 +293,5 @@ async function endGame(gameId) {
 }
 
 module.exports = {
-    startGame,startTurn,submitSong,submitHint,fetchLyrics,generateAiHint,createTurn,startGuessingPhase,submitGuess, endGame
+    startGame,startTurn,submitSong,submitHint,fetchLyrics,generateAiHint,createTurn,startGuessingPhase,submitGuess, endGame,completeTurn
 };

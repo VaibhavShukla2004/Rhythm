@@ -19,7 +19,7 @@ const login = async (req,res) => {
     try {
         const token = await authService.login(email, password);
         if(!token){
-            return res.status(400).json({ message: 'Invalid email or password' });
+            return res.status(400).json({ message: 'Invalid email or password'});
         }
         res.json({ token });
     } catch (error) {

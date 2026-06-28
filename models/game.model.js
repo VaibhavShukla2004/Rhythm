@@ -34,20 +34,6 @@ const GameSchema = new Schema(
         playerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
         totalGuessTimeMs: { type: Number, default: 0 },
        guessesCorrect: { type: Number, default: 0 },
-
-    songsChosen: [//we havent implemented this yet
-      {
-        songTitle: String,
-        artistName: String
-      }
-    ],
-
-    songsGuessedCorrectly: [//havent implemented this yet
-      {
-        songTitle: String,
-        artistName: String
-      }
-    ]
       }
     ],
 
@@ -65,10 +51,6 @@ pendingTurn: {//temporarily stores the songTitle,artistname and playerHint which
       'failing'//I'm thinking null when nothing,'generating' when generation started,'succes' if ready,'failed' if could not.
     ],
   },
-    retryCount: {
-        type: Number,
-        default: 0
-    }
 },
 finishedAt: {
     type: Date

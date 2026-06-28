@@ -6,6 +6,8 @@ exports.getUnsyncedLyrics = async (track_name,artist_name) => {
   const query = { track_name, artist_name};//from documentation i come to know that this is needed.
 
   const lyrics = await client.getUnsynced(query);
+  console.log(lyrics);
+  const lyricsString = lyrics.map(line => line.text).join('\n');
 
-  return lyrics;
+  return lyricsString;
 };

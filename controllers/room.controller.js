@@ -1,5 +1,5 @@
 const roomService = require('../services/room.service');
-const gameOrchestrator = require('../service/game.orchestrator'); 
+const gameOrchestrator = require('../services/game.orchestrator'); 
 exports.createRoom = async (req, res, next) => {
     try {
         const { maxPlayers } = req.body;
@@ -79,16 +79,15 @@ exports.startGame=async (req, res, next)=> {
 
     try {
 
-        const {room,roomCode } = req.params;
+        const {roomCode } = req.body;//this was req.params
 
         const userId = req.user.userId;
 
-        const game = await gameorchestrator.handleGameStart(roomCode,userId);
+        const game = await gameOrchestrator.handleGameStart(roomCode,userId);
 
         res.status(201).json({
             success: true,
             message: 'Game started successfully',
-            room,
             game,
         });
 

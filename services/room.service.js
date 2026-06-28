@@ -76,10 +76,6 @@ async function joinRoom(roomCode, userId) {//room expiry logic is left
     if (room.gameStatus === "in-progress") {
         throw new Error("Game already started");
     }
-
-    if (room.players.length >= room.maxPlayers) {
-        throw new Error("Room is full");
-    }
     const alreadyJoined = room.players.some(
         player =>
             player.userId.toString() === userId.toString()//.some() loops through it and returns true if any item matches the condition.room.players is the array,for players as room.players it checks. Analogous to java stream
@@ -88,6 +84,10 @@ async function joinRoom(roomCode, userId) {//room expiry logic is left
     if (alreadyJoined) {
         throw new Error("Already in room");
     }
+    if (room.players.length >= room.maxPlayers) {
+        throw new Error("Room is full");
+    }
+
 
     room.players.push({
         userId

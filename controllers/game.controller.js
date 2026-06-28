@@ -4,7 +4,7 @@ exports.submitSong = async (req,res,next) => {
 
     try {
         const { gameId } =req.params;
-
+        console.log(gameId);
         const {songTitle,artistName} = req.body;
 
         const playerId =req.user.userId;
@@ -14,7 +14,7 @@ exports.submitSong = async (req,res,next) => {
         res.status(200).json({
             success: true,
             message:
-                "Song submitted successfully",
+            "Song submitted successfully",
             game
         });
 
@@ -55,7 +55,7 @@ exports.submitGuess = async (req,res,next) => {
         const {guessedSong,guessedArtist} = req.body;
 
         const playerId =req.user.userId;
-
+        //console.log(playerId);
         const game =await gameOrchestrator.handleGuessSubmission(gameId,playerId,guessedSong,guessedArtist);
 
         res.status(200).json({
@@ -70,19 +70,11 @@ exports.submitGuess = async (req,res,next) => {
     }
 };
 
-async function retryTurn(
-    req,
-    res,
-    next
-) {
+exports.retryTurn=async(req,res,next)=> {
 
     try {
 
-        const game =
-            await gameOrchestrator.retryTurn(
-                req.params.gameId,
-                req.user.userId
-            );
+        const game =await gameOrchestrator.retryTurn(req.params.gameId,req.user.userId);
 
         res.status(200).json(game);
 
@@ -91,19 +83,11 @@ async function retryTurn(
     }
 }
 
-async function skipTurn(
-    req,
-    res,
-    next
-) {
+exports.skipTurn=async (req,res,next)=> {
 
     try {
 
-        const game =
-            await gameOrchestrator.skipTurn(
-                req.params.gameId,
-                req.user.userId
-            );
+        const game =await gameOrchestrator.skipTurn(req.params.gameId,req.user.userId);
 
         res.status(200).json(game);
 
@@ -111,3 +95,4 @@ async function skipTurn(
         next(error);
     }
 }
+
