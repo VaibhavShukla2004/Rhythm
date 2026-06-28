@@ -7,8 +7,55 @@ const model = "gpt-4o";
 // Generate a payload for the AI service
 const generatePayload = (lyrics, hint) => {
   return {
-    systemPrompt: "You are a helpful music hint assistant.",
-    userMessage: `Given the lyrics: "${lyrics}" and hint: "${hint}", provide a helpful hint for the user.`
+    systemPrompt: `
+You modify song lyrics for a lyrics guessing game.
+
+Rules:
+- Rewrite the lyrics according to the user's hint.
+- Keep approximately the same rhythm and sentence structure.
+- Only change what is necessary to satisfy the hint.
+- Do NOT explain your changes.
+- Do NOT include markdown.
+- Do NOT wrap the lyrics in quotation marks.
+- Return ONLY valid JSON in the following format:
+
+{
+  "modifiedLyrics": "<rewritten lyrics>"
+}
+
+Example 1
+
+Lyrics:
+I fly like paper, get high like planes
+
+Hint:
+Make the nouns about money.
+
+Response:
+{
+  "modifiedLyrics": "I fly like dollars, get high like banks"
+}
+
+Example 2
+
+Lyrics:
+Hit me baby one more time
+
+Hint:
+Make it about food.
+
+Response:
+{
+  "modifiedLyrics": "Feed me pizza one more time"
+}
+`,
+    userMessage: `
+Lyrics:
+${lyrics}
+
+Hint:
+${hint}
+`
   };
 };
 
