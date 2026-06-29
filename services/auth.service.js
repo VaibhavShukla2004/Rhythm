@@ -1,7 +1,7 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const userModel = require('../models/user.model');
-
+const Profile = require("../models/profile.model");
 exports.register = async ({ email, password, name, age, securityAnswer }) => {//exports.register same as module.exports
   const hashedPassword = await bcrypt.hash(password, 10);//It first encrypts the plain-text password. The 10 is the "salt rounds" 
 
@@ -12,7 +12,10 @@ exports.register = async ({ email, password, name, age, securityAnswer }) => {//
     age,
     securityAnswer
   });
-
+ 
+await Profile.create({
+    userId: user._id
+});
   return user;
 };
 

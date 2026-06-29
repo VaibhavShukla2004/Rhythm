@@ -20,6 +20,8 @@ async function startGame(room) {//to set up game document-setting game to in-pro
         players,
         stats
     });
+    room.gameId = game._id;
+    await room.save();
     return game;//the game document goes to room.service.startGame.
 }
 
@@ -187,6 +189,7 @@ async function startGuessingPhase(gameId) {//initially all guessers in "stand-by
 
 async function submitGuess(gameId,playerId,guessedSong,guessedArtist) {
     const game = await Game.findById(gameId);
+    if(game==null)throw new Error("Game doesnt exist");
     const player =game.players.find(
             player =>
                 player.playerId.toString() === playerId.toString()
@@ -248,8 +251,7 @@ async function endGame(gameId) {
         throw new Error('Game not found');
     }
 
-    const results =
-        game.stats.map(
+    const results =game.stats.map(
             stat => {
 
                 const score =(stat.guessesCorrect * 100)
@@ -257,13 +259,7 @@ async function endGame(gameId) {
                     (stat.totalGuessTimeMs /1000);
 
                 return {
-                    playerId:stat.playerId,
-
-                    guessesCorrect:stat.guessesCorrect,
-
-                    totalGuessTimeMs:stat.totalGuessTimeMs,
-
-                    score
+                    playerId:stat.playerId,guessesCorrect:stat.guessesCorrect,totalGuessTimeMs:stat.totalGuessTimeMs,score
                 };
             }
         );

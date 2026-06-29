@@ -112,7 +112,7 @@ exports.skipTurn = async (gameId,playerId) => {
     if (game.currentTurnIndex >=game.players.length) {
        // timerManager.cancelTimer(gameId);
     const finishedGame =await gameService.endGame(gameId);
-    console.log(finishedGame);
+    console.log(finishedGame.finalResults);
     emitGameUpdated(finishedGame.roomId,finishedGame);
     return finishedGame;
     }
@@ -144,7 +144,7 @@ exports.handleGuessSubmission = async (gameId,playerId,guessedSong,guessedArtist
     if (game.currentTurnIndex >=game.players.length) {
         //timerManager.cancelTimer(gameId);
    const finishedGame =await gameService.endGame(gameId);
-   console.log(finishedGame);
+   console.log(finishedGame.finalResults);
     emitGameUpdated(finishedGame.roomId,finishedGame);
     return finishedGame;
     }
@@ -170,7 +170,7 @@ exports.completeGuessTimeoutTurn = async (gameId) => {
     if (game.currentTurnIndex >=game.players.length){
         //timerManager.cancelTimer(gameId);
     const finishedGame =await gameService.endGame(gameId);
-    console.log(finishedGame);
+    console.log(finishedGame.finalResults);
     emitGameUpdated(finishedGame.roomId,finishedGame);
     return finishedGame;
 }

@@ -13,7 +13,11 @@ const roomSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-
+    gameId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Game",
+    default: null
+},
     players: [
       {
         userId: {

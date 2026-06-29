@@ -1,6 +1,6 @@
 const Room = require("../models/room.model");
 const gameService = require("./game.service");
-
+const Game = require("../models/game.model");
 async function generateRoomCode() {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     while (true) {//keeps on trying until unique code
@@ -226,7 +226,7 @@ async function validateFinishGame(roomCode,userId) {
     
     if (room.hostId.toString() !==userId.toString()) throw new Error("Only the host can finish the game.");
     
-    const game = await Game.findById(room.gameId);
+    const game = await Game.findById(room.gameId);//there's something wrong here
 
     if (!game) throw new Error("Game not found.");
     
@@ -241,4 +241,4 @@ async function deleteRoom(roomCode) {
     });
 
 }
-module.exports={createRoom,getRoomDetails,joinRoom,transferHost,leaveRoom,startGame,deleteRoom};
+module.exports={createRoom,getRoomDetails,joinRoom,transferHost,leaveRoom,startGame,deleteRoom,validateFinishGame};
