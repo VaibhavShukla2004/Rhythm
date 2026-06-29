@@ -1,5 +1,6 @@
 const roomService = require('../services/room.service');
 const gameService = require('../services/game.service');
+const profileService = require("../services/profile.service");
 const Game = require('../models/game.model');
 const {emitGameUpdated} = require('../utils/socket.emitter');
 //const timerManager =require('../utils/timerManager');
@@ -186,6 +187,28 @@ exports.completeGuessTimeoutTurn = async (gameId) => {
     return startNextTurn(gameId);
 }
 
+async function handleFinishGame(roomCode, userId) {
+
+    // Validate everything first
+    const { room, game } =await roomService.validateFinishGame(roomCode,userId);
+
+    // Persist player stats
+    await profileService.updateProfiles(game);
+    
+    // Notify everyone
+    await emitGameUpdated(game.roomId,null);////when frontend sees null,it navigates users to homepage,cuz only the host clicks this button but other players need to be navigated to the homepage automatically too 
+    // Delete runtime game state
+    await gameService.deleteGame(game._id);
+
+    // Delete room
+    await roomService.deleteRoom(roomCode);
+
+
+
+    return;
+}
+
+
 module.exports = {
     handleGameStart: exports.handleGameStart,
     startNextTurn,
@@ -195,4 +218,5 @@ module.exports = {
     skipTurn: exports.skipTurn,
     handleGuessSubmission: exports.handleGuessSubmission,
     completeGuessTimeoutTurn: exports.completeGuessTimeoutTurn,
+    handleFinishGame
 };

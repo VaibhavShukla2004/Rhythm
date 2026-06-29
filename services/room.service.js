@@ -218,4 +218,27 @@ async function startGame(roomCode, userId) {
     return {room,game};
 }
 
-module.exports={createRoom,getRoomDetails,joinRoom,transferHost,leaveRoom,startGame};
+async function validateFinishGame(roomCode,userId) {
+
+    const room = await Room.findOne({roomCode});
+
+    if (!room) throw new Error("Room not found.");
+    
+    if (room.hostId.toString() !==userId.toString()) throw new Error("Only the host can finish the game.");
+    
+    const game = await Game.findById(room.gameId);
+
+    if (!game) throw new Error("Game not found.");
+    
+    if (game.gameState !== "ended") throw new Error("Game has not ended yet.");
+    return {room,game};
+}
+
+async function deleteRoom(roomCode) {
+
+    await Room.findOneAndDelete({
+        roomCode
+    });
+
+}
+module.exports={createRoom,getRoomDetails,joinRoom,transferHost,leaveRoom,startGame,deleteRoom};

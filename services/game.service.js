@@ -291,7 +291,11 @@ async function endGame(gameId) {
 
     return game;
 }
+async function deleteGame(gameId) {
 
+    await Game.findByIdAndDelete(gameId);
+
+}
 module.exports = {
-    startGame,startTurn,submitSong,submitHint,fetchLyrics,generateAiHint,createTurn,startGuessingPhase,submitGuess, endGame,completeTurn
+    startGame,startTurn,submitSong,submitHint,fetchLyrics,generateAiHint,createTurn,startGuessingPhase,submitGuess, endGame,completeTurn,deleteGame
 };
