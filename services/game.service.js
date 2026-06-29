@@ -153,7 +153,7 @@ async function createTurn(gameId) {
 
         const aiResponse ="dummy"//await generateAiHint(lyrics,playerHint);//send to ai
 
-        game.pendingTurn.aiResponse = aiResponse;//save the ai response to display to guessers
+        game.pendingTurn.aiResponse = "I'm a dummy AI hint";//save the ai response to display to guessers
 
         game.turns.push({
             chooserPlayerId:game.players[game.currentTurnIndex].playerId,

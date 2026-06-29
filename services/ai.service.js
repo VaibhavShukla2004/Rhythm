@@ -1,43 +1,99 @@
-const { GoogleGenAI } = require("@google/genai");
-const promptTemplate = `You are modifying song lyrics for a lyrics guessing game.
+const OpenAI = require("openai");
+
+const token = process.env["GITHUB_TOKEN"];
+const endpoint = "https://models.github.ai/inference";
+const model = "gpt-4o";
+
+// Private helper function (no longer exported)
+const generatePayload = (lyrics, hint) => {
+  return {
+    systemPrompt: `
+You modify song lyrics for a lyrics guessing game.
+
 Rules:
 - Rewrite the lyrics according to the user's hint.
-- Keep roughly the same rhythm and structure.
-- Return ONLY the modified lyrics`;
+- Keep approximately the same rhythm and sentence structure.
+- Only change what is necessary to satisfy the hint.
+- Do NOT explain your changes.
+- Do NOT include markdown.
+- Do NOT wrap the lyrics in quotation marks.
+- Return ONLY valid JSON in the following format:
 
-//creates gemini client 
-const client = new GoogleGenAI({
-    apiKey: process.env.GEMINI_API_KEY
-});
+{
+  "modifiedLyrics": "<rewritten lyrics>"
+}
 
-//generates payload which is the final string to be sent to gemini
-function generatePayload(lyrics, hint) {
-    const prompt = `
-${promptTemplate}
+Example 1
+
+Lyrics:
+I fly like paper, get high like planes
+
+Hint:
+Make the nouns about money.
+
+Response:
+{
+  "modifiedLyrics": "I fly like dollars, get high like banks"
+}
+
+Example 2
+
+Lyrics:
+Hit me baby one more time
+
+Hint:
+Make it about food.
+
+Response:
+{
+  "modifiedLyrics": "Feed me pizza one more time"
+}
+`,
+    userMessage: `
+Lyrics:
+${lyrics}
 
 Hint:
 ${hint}
+`
+  };
+};
 
-Lyrics:
-${lyrics}
-`;
+// Main service function that handles the full workflow
+const getModifiedLyrics = async (lyrics, hint) => {
+  try {
+    const payload = generatePayload(lyrics, hint);
+    
+    const client = new OpenAI({
+      baseURL: endpoint,
+      apiKey: token
+    });
 
-    return { prompt };
-}
+    const response = await client.chat.completions.create({
+      model: model,
+      messages: [
+        {
+          role: "system",
+          content: payload.systemPrompt
+        },
+        {
+          role: "user",
+          content: payload.userMessage
+        }
+      ],
+      response_format: {
+        type: "json_object"
+      }
+    });
 
+    return JSON.parse(response.choices[0].message.content).modifiedLyrics;
+  } catch (error) {
+    console.error("AI Service Error:", error);
+    // You can throw a more generic error here if you want to hide OpenAI specifics from the controller
+    throw new Error("Failed to process lyrics through AI service."); 
+  }
+};
 
-//sends payload to AI and gets AI response
-async function getAIResponse(payload) {
-    try {
-        const response = await client.models.generateContent({
-            model: "gemini-3.5-flash",
-            contents: payload.prompt
-        });
-
-        return response.text;
-    } catch (e) {
-        console.error("Gemini API Error:", e);
-        throw e;
-    }
-}
-
+module.exports = {
+  getModifiedLyrics
+};

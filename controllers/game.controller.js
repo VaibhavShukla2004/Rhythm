@@ -26,9 +26,8 @@ exports.submitSong = async (req,res,next) => {
 exports.submitHint = async (req,res,next) => {
 
     try {
-        const { gameId } = req.params;
 
-        const { playerHint } =req.body;
+        const { gameId,playerHint } =req.body;
 
         const playerId =req.user.userId;
 
@@ -50,9 +49,8 @@ exports.submitGuess = async (req,res,next) => {
 
     try {
 
-        const { gameId } = req.params;
 
-        const {guessedSong,guessedArtist} = req.body;
+        const {gameId,guessedSong,guessedArtist} = req.body;
 
         const playerId =req.user.userId;
         //console.log(playerId);

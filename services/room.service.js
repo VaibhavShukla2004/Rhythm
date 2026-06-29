@@ -76,6 +76,8 @@ async function joinRoom(roomCode, userId) {//room expiry logic is left
     if (room.gameStatus === "in-progress") {
         throw new Error("Game already started");
     }
+
+    //check first if player is already joined and do not allow to join again. This is to prevent multiple joins by same player
     const alreadyJoined = room.players.some(
         player =>
             player.userId.toString() === userId.toString()//.some() loops through it and returns true if any item matches the condition.room.players is the array,for players as room.players it checks. Analogous to java stream
@@ -88,6 +90,11 @@ async function joinRoom(roomCode, userId) {//room expiry logic is left
         throw new Error("Room is full");
     }
 
+
+    if (room.players.length >= room.maxPlayers) {
+        throw new Error("Room is full");
+    }
+    
 
     room.players.push({
         userId

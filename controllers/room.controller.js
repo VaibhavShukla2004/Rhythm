@@ -59,7 +59,9 @@ exports.startGame=async (req, res, next)=> {
 
     try {
 
-        const {roomCode } = req.body;//this was req.params
+        //was req.params.roomCode but changed to req.body.roomCode because the roomCode is now being sent in the body of the request instead of as a URL parameter. 
+        //This change was made to accommodate the new frontend design where the roomCode is part of the request body when starting a game.
+        const { roomCode } = req.body;
 
         const userId = req.user.userId;
 

@@ -9,13 +9,11 @@ exports.handleGameStart = async (roomCode, userId) => {
     const { room, game } = await roomService.startGame(roomCode,userId);//calling roomService.startGame() which calls gameService.startGame() which returns back doc. After this players are all "stand-by",so states emitted.
     emitGameUpdated(game.roomId,game);
     await startNextTurn(game._id);
-}
+};
 
 const startNextTurn = async (gameId) => {
 
-    const game =await gameService.startTurn(gameId);
-
-   emitGameUpdated(game.roomId,game);
+    emitGameUpdated(game.roomId, game);
     // everybody after here is either "choosing-song" or standby. Orchestrator's handleGameStart stops here.
 
     //timerManager.startChooserTimer(gameId);
@@ -23,12 +21,14 @@ const startNextTurn = async (gameId) => {
     return game;
 }
 
-exports.handleSongSubmission = async (gameId,playerId,songTitle,artistName) => {//only handles in-time and correct submissions.Frontend wont allow incorrect format,and out of time submissions handle by expiry logic and our submit guess already wont allow anybdy else to submit once index shifts(handles lag edge case)
+exports.startNextTurn = startNextTurn;
 
-    const game =await gameService.submitSong(gameId,playerId,songTitle,artistName);
+exports.handleSongSubmission = async (gameId, playerId, songTitle, artistName) => {//only handles in-time and correct submissions.Frontend wont allow incorrect format,and out of time submissions handle by expiry logic and our submit guess already wont allow anybdy else to submit once index shifts(handles lag edge case)
+    console.log('[game.orchestrator] handleSongSubmission called with', { gameId, playerId, songTitle, artistName });
+    const game = await gameService.submitSong(gameId, playerId, songTitle, artistName);
 
     // SOCKET.IO
-    emitGameUpdated(game.roomId,game);
+    emitGameUpdated(game.roomId, game);
     // emit game-state-updated
     // chooser now sees hint page others remain standby
 
@@ -37,57 +37,53 @@ exports.handleSongSubmission = async (gameId,playerId,songTitle,artistName) => {
     // start chooser-hint timer
 
     return game;
-}
+};
 
 exports.handleHintSubmission = async (gameId,playerId,playerHint) => {
     //timerManager.cancelTimer(gameId);
     const game =await gameService.submitHint(gameId,playerId,playerHint);
 
     // SOCKET.IO
-    emitGameUpdated(game.roomId,game);//standy-by for all
+    emitGameUpdated(game.roomId, game);//standy-by for all
 
     try {
-
         await gameService.createTurn(gameId);
-       
-        const guessingGame =await gameService.startGuessingPhase(gameId);
-    
+
+        const guessingGame = await gameService.startGuessingPhase(gameId);
+
         // SOCKET.IO
-        emitGameUpdated(guessingGame.roomId,guessingGame);
+        emitGameUpdated(guessingGame.roomId, guessingGame);
         // people shown their song-guessing states accordingly
 
         // TIMER
         //timerManager.startGuessTimer(gameId);
 
         return guessingGame;
-
     } catch (error) {
         console.log(error);
         const failedGame =await Game.findById(gameId);
 
-        failedGame.pendingTurn.status ="failing";
+        failedGame.pendingTurn.status = 'failing';
 
         await failedGame.save();
 
         // SOCKET.IO
-        emitGameUpdated(failedGame.roomId,failedGame);//a page displayed where retry and skip turn buttons can be displayed.
+        emitGameUpdated(failedGame.roomId, failedGame);//a page displayed where retry and skip turn buttons can be displayed.
 
         return failedGame;
     }
-}
+};
 
 exports.retryTurn = async (gameId,playerId) => {
 
-    const game =await Game.findById(gameId);
+    const chooserId = game.players[game.currentTurnIndex].playerId;
 
-    const chooserId =game.players[game.currentTurnIndex].playerId;
-
-    if (chooserId.toString() !==playerId.toString()) {
-        throw new Error("Only chooser can retry");
+    if (chooserId.toString() !== playerId.toString()) {
+        throw new Error('Only chooser can retry');
     }
 
-    if (game.pendingTurn.status !=="failing") {
-        throw new Error("Turn is not failing");
+    if (game.pendingTurn.status !== 'failing') {
+        throw new Error('Turn is not failing');
     }
 
     //game.pendingTurn.status ="pending";
@@ -95,16 +91,14 @@ exports.retryTurn = async (gameId,playerId) => {
     await game.save();
 
     return startNextTurn(gameId);
-}
+};
 
 exports.skipTurn = async (gameId,playerId) => {
 
-    const game =await Game.findById(gameId);
+    const chooserId = game.players[game.currentTurnIndex].playerId;
 
-    const chooserId =game.players[game.currentTurnIndex].playerId;
-
-    if (chooserId.toString() !==playerId.toString()) {
-        throw new Error("Only chooser can skip");
+    if (chooserId.toString() !== playerId.toString()) {
+        throw new Error('Only chooser can skip');
     }
 
     game.currentTurnIndex++;
@@ -122,7 +116,7 @@ exports.skipTurn = async (gameId,playerId) => {
     await game.save();
 
     return startNextTurn(gameId);
-}
+};
 
 exports.handleGuessSubmission = async (gameId,playerId,guessedSong,guessedArtist) => {
     const result =await gameService.submitGuess(gameId,playerId,guessedSong,guessedArtist);
@@ -132,8 +126,8 @@ exports.handleGuessSubmission = async (gameId,playerId,guessedSong,guessedArtist
     }
 
     // SOCKET.IO
-    emitGameUpdated(result.game.roomId,result.game);
-    const turnResult =await gameService.completeTurn(gameId);
+    emitGameUpdated(result.game.roomId, result.game);
+    const turnResult = await gameService.completeTurn(gameId);
 
     if (!turnResult.allDone) return turnResult.game;
     //timerManager.cancelTimer(gameId);
@@ -150,12 +144,12 @@ exports.handleGuessSubmission = async (gameId,playerId,guessedSong,guessedArtist
     }
 
     game.players.forEach(player => {
-        player.state = "stand-by";
+        player.state = 'stand-by';
     });
 
     await game.save();
     return await startNextTurn(gameId);
-}
+};
 
 exports.completeGuessTimeoutTurn = async (gameId) => {
 
@@ -163,7 +157,7 @@ exports.completeGuessTimeoutTurn = async (gameId) => {
 
     if (!turnResult.allDone) return turnResult.game;
 
-    const game =turnResult.game;
+    const game = turnResult.game;
 
     game.currentTurnIndex++;
 
@@ -178,7 +172,7 @@ exports.completeGuessTimeoutTurn = async (gameId) => {
 
     game.players.forEach(
         player => {
-            player.state ='stand-by';
+            player.state = 'stand-by';
         }
     );
 
