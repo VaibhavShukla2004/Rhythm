@@ -1,266 +1,279 @@
 const Game = require("../models/game.model");
-const {getUnsyncedLyrics} = require("../services/song.service");
-const {getModifiedLyrics}=require("../services/ai.service.js")
+const { getUnsyncedLyrics } = require("../services/song.service");
+const { getModifiedLyrics } = require("../services/ai.service.js");
 //the methods are in flow
-async function createGame(room) {//to set up game document-setting game to in-progress,putting in roomId and other stuff
+async function createGame(room) {
+  //to set up game document-setting game to in-progress,putting in roomId and other stuff
 
-    const players = room.players.map(player => ({
-        playerId: player.userId//basically we are transforming the array of objects(hashmap) and transforming into an array which consists of multiple hashmaps of 1 indice-each of these indices map playerId to userid(do playerId=userId). .map() initially transforms the og array usinga  copy and returns it,og array not affected.
-    }));
+  const players = room.players.map((player) => ({
+    playerId: player.userId, //basically we are transforming the array of objects(hashmap) and transforming into an array which consists of multiple hashmaps of 1 indice-each of these indices map playerId to userid(do playerId=userId). .map() initially transforms the og array usinga  copy and returns it,og array not affected.
+  }));
 
-    const stats = room.players.map(player => ({//When this copy is inserted into game,the playerId part is validated against schema,for each id(object in the transformed array stats) eg [{ playerId: ObjectId("507f1f77bcf86cd799439011"), state: "stand-by", guessStartedAt: null, guessedAt: null }, { playerId: ObjectId("507f1f77bcf86cd799439012")...  
-        playerId: player.userId
-    }));
+  const stats = room.players.map((player) => ({
+    //When this copy is inserted into game,the playerId part is validated against schema,for each id(object in the transformed array stats) eg [{ playerId: ObjectId("507f1f77bcf86cd799439011"), state: "stand-by", guessStartedAt: null, guessedAt: null }, { playerId: ObjectId("507f1f77bcf86cd799439012")...
+    playerId: player.userId,
+  }));
 
-    const game = await Game.create({//saves it to db
-        roomId: room._id,
-        gameState: "in-progress",
-        roundNumber: 0,
-        currentTurnIndex: 0,
-        players,
-        stats
-    });
-    room.gameId = game._id;
-    await room.save();
-    return game;//the game document goes to room.service.startGame.
+  const game = await Game.create({
+    //saves it to db
+    roomId: room._id,
+    gameState: "in-progress",
+    roundNumber: 0,
+    currentTurnIndex: 0,
+    players,
+    stats,
+  });
+  room.gameId = game._id;
+  await room.save();
+  return game; //the game document goes to room.service.startGame.
 }
 
-async function startTurn(gameId) {//to just set chooser and his state to  
+async function startTurn(gameId) {
+  //to just set chooser and his state to
 
-    const game = await Game.findById(gameId);
-    if (!game) throw new Error("Game not found");
+  const game = await Game.findById(gameId);
+  if (!game) throw new Error("Game not found");
 
-    if (game.gameState !== "in-progress") throw new Error("Game not in progress");
+  if (game.gameState !== "in-progress") throw new Error("Game not in progress");
 
-    const chooser = game.players[game.currentTurnIndex];//refernce to db.Finds who current chooser is
+  const chooser = game.players[game.currentTurnIndex]; //refernce to db.Finds who current chooser is
 
-    chooser.state = "choosing-song";//sets state
-    game.pendingTurn.startedAt =new Date();//temporary; to check if two mins are up or nah
-    await game.save();
+  chooser.state = "choosing-song"; //sets state
+  game.pendingTurn.startedAt = new Date(); //temporary; to check if two mins are up or nah
+  await game.save();
 
-    return game;
+  return game;
 }
 
-async function submitSong(gameId,playerId,songTitle,artistName) {//chooser submits song
+async function submitSong(gameId, playerId, songTitle, artistName) {
+  //chooser submits song
 
-    const game = await Game.findById(gameId);
+  const game = await Game.findById(gameId);
 
-    if (!game) throw new Error("Game not found");
+  if (!game) throw new Error("Game not found");
 
-    const chooser =game.players[game.currentTurnIndex];
+  const chooser = game.players[game.currentTurnIndex];
 
-    if (chooser.playerId.toString() !==playerId.toString())throw new Error("Only current chooser can submit song");
-    
-    if (chooser.state !== "choosing-song")throw new Error("Player not in choosing-song state");//a chooser can either be in choosing-song and choosing-hint state
-    game.pendingTurn.songTitle =songTitle;
-    game.pendingTurn.artistName =artistName;
-    chooser.state ="choosing-hint";
+  if (chooser.playerId.toString() !== playerId.toString())
+    throw new Error("Only current chooser can submit song");
 
-    await game.save();
+  if (chooser.state !== "choosing-song")
+    throw new Error("Player not in choosing-song state"); //a chooser can either be in choosing-song and choosing-hint state
+  game.pendingTurn.songTitle = songTitle;
+  game.pendingTurn.artistName = artistName;
+  chooser.state = "choosing-hint";
 
-    return game;
+  await game.save();
+
+  return game;
 }
 
-async function submitHint(gameId,playerId,playerHint) {
+async function submitHint(gameId, playerId, playerHint) {
+  const game = await Game.findById(gameId);
+  console.log(game);
+  if (!game) throw new Error("Game not found");
 
-    const game =await Game.findById(gameId);
-    console.log(game);
-    if (!game) throw new Error("Game not found");
+  const chooser = game.players[game.currentTurnIndex];
 
-    const chooser =game.players[game.currentTurnIndex];
+  if (chooser.playerId.toString() !== playerId.toString())
+    throw new Error("Only current chooser can submit hint");
 
-    if (chooser.playerId.toString() !==playerId.toString()) throw new Error("Only current chooser can submit hint");
+  if (chooser.state !== "choosing-hint")
+    throw new Error("Player not in choosing-hint state");
 
-    if (chooser.state !=="choosing-hint") throw new Error("Player not in choosing-hint state");
+  if (!playerHint) throw new Error("Hint is required");
 
-    if (!playerHint) throw new Error("Hint is required");
+  game.pendingTurn.playerHint = playerHint;
+  game.pendingTurn.status = "generating";
+  chooser.state = "stand-by";
+  await game.save();
 
-    game.pendingTurn.playerHint =playerHint;
-    game.pendingTurn.status ="generating";
-    chooser.state ="stand-by";
-    await game.save();
-
-    return game;
+  return game;
 }
 
-async function fetchLyrics(songTitle,artistName) {
-    const lyrics =await getUnsyncedLyrics(songTitle,artistName);
+async function fetchLyrics(songTitle, artistName) {
+  const lyrics = await getUnsyncedLyrics(songTitle, artistName);
 
-    if (!lyrics) {
-        throw new Error("Lyrics not found");
-    }
+  if (!lyrics) {
+    throw new Error("Lyrics not found");
+  }
 
-    return lyrics;
+  return lyrics;
 }
 
-async function generateAiResponse(lyrics,playerHint) {
-    try{
-    const aiHint= await getModifiedLyrics(lyrics,playerHint); 
+async function generateAiResponse(lyrics, playerHint) {
+  try {
+    const aiHint = await getModifiedLyrics(lyrics, playerHint);
     console.log(aiHint);
     return aiHint;
-    }
-    catch(error){
-        console.log(error);
-        throw new Error("error in aiReponse");
-    }
+  } catch (error) {
+    console.log(error);
+    throw new Error("error in aiReponse");
+  }
 
-   // TODO:
-    // Call AI API
+  // TODO:
+  // Call AI API
 
-    return "Dummy AI Hint";
+  return "Dummy AI Hint";
 }
 
 async function createTurn(gameId) {
+  const game = await Game.findById(gameId);
 
-    const game = await Game.findById(gameId);
+  if (!game) throw new Error("Game not found");
 
-    if (!game) throw new Error("Game not found");
+  const { songTitle, artistName, playerHint } = game.pendingTurn; //get this information so you can send it to lyrics and ai API
 
-    const {songTitle,artistName,playerHint} = game.pendingTurn;//get this information so you can send it to lyrics and ai API
+  const lyrics = await fetchLyrics(songTitle, artistName); //first fetch lyrics
 
-        const lyrics = await fetchLyrics(songTitle,artistName);//first fetch lyrics
+  const aiResponse = await generateAiResponse(lyrics, playerHint); //await generateAiHint(lyrics,playerHint);//send to ai
 
-        const aiResponse =await generateAiResponse(lyrics,playerHint)//await generateAiHint(lyrics,playerHint);//send to ai
+  game.pendingTurn.aiResponse = aiResponse; //save the ai response to display to guessers
 
-        game.pendingTurn.aiResponse = aiResponse;//save the ai response to display to guessers
-
-        game.turns.push({
-            chooserPlayerId:game.players[game.currentTurnIndex].playerId,
-            songTitle,
-            artistName,
-            lyrics,
-            playerHint,
-            aiHint: aiResponse,
-            status: "ready"
-        });
-        game.pendingTurn.status = "success";//again need to find out whats up
-        await game.save();
-        return game;
+  game.turns.push({
+    chooserPlayerId: game.players[game.currentTurnIndex].playerId,
+    songTitle,
+    artistName,
+    lyrics,
+    playerHint,
+    aiHint: aiResponse,
+    status: "ready",
+  });
+  game.pendingTurn.status = "success"; //again need to find out whats up
+  await game.save();
+  return game;
 }
 
-async function startGuessingPhase(gameId) {//initially all guessers in "stand-by", now they are in guessing
+async function startGuessingPhase(gameId) {
+  //initially all guessers in "stand-by", now they are in guessing
 
-    const game = await Game.findById(gameId);
-    const chooserId =game.players[game.currentTurnIndex].playerId.toString();
-    game.players.forEach(player => {
-
-        if (player.playerId.toString() ===chooserId) {
-            player.state = "stand-by";
-        }
-         else {
-            player.state = "guessing";
-        }
-        player.guessStartedAt =new Date();
-    });
-    await game.save();
-    return game;
-}
-
-async function submitGuess(gameId,playerId,guessedSong,guessedArtist) {
-    const game = await Game.findById(gameId);
-    if(game==null)throw new Error("Game doesnt exist");
-    const player =game.players.find(
-            player =>
-                player.playerId.toString() === playerId.toString()
-        );
-    if (!player) throw new Error("Player not found");//these are just checks,the frontend would be made as such that these endpoints arent exposed
-    console.log("printing");
-    console.log(player.playerId);
-    console.log(player.state);
-    if (player.state !== "guessing") {//same shit here.A guessed player wouldnt be able to submit shit
-        throw new Error("Player not guessing");
+  const game = await Game.findById(gameId);
+  const chooserId = game.players[game.currentTurnIndex].playerId.toString();
+  game.players.forEach((player) => {
+    if (player.playerId.toString() === chooserId) {
+      player.state = "stand-by";
+    } else {
+      player.state = "guessing";
     }
-    const currentTurn = game.turns[game.turns.length - 1];
-    const songMatches =guessedSong.trim().toLowerCase() ===currentTurn.songTitle.trim().toLowerCase();
-    const artistMatches =guessedArtist.trim().toLowerCase() ===currentTurn.artistName.trim().toLowerCase();
-
-    if (songMatches &&artistMatches) { //only if you guess correctly
-        player.state = "guessed";
-        const stat = game.stats.find(
-                stat =>
-                    stat.playerId.toString() === playerId.toString()
-            );
-
-        if (stat) {//your guessCorrect stats updated
-            stat.guessesCorrect += 1;
-        }
-        await game.save();
-        return {
-            correct: true,
-            game
-        };
-    }//else js return false
-    return {
-        correct: false,
-        game
-    };
+    player.guessStartedAt = new Date();
+  });
+  await game.save();
+  return game;
 }
 
-async function completeTurn(gameId) {//this satisfies the test case where everybody "guessed" but before time
-    const game = await Game.findById(gameId);
-    const allDone = game.players.every(player => {//yo ion understand this properly but js gpt it,shld do
+async function submitGuess(gameId, playerId, guessedSong, guessedArtist) {
+  const game = await Game.findById(gameId);
+  if (game == null) throw new Error("Game doesnt exist");
+  const player = game.players.find(
+    (player) => player.playerId.toString() === playerId.toString(),
+  );
+  if (!player) throw new Error("Player not found"); //these are just checks,the frontend would be made as such that these endpoints arent exposed
+  console.log("printing");
+  console.log(player.playerId);
+  console.log(player.state);
+  if (player.state !== "guessing") {
+    //same shit here.A guessed player wouldnt be able to submit shit
+    throw new Error("Player not guessing");
+  }
+  const currentTurn = game.turns[game.turns.length - 1];
+  const songMatches =
+    guessedSong.trim().toLowerCase() ===
+    currentTurn.songTitle.trim().toLowerCase();
+  const artistMatches =
+    guessedArtist.trim().toLowerCase() ===
+    currentTurn.artistName.trim().toLowerCase();
 
-            const isChooser = player.playerId.toString() === game.players[game.currentTurnIndex].playerId.toString();
+  if (songMatches && artistMatches) {
+    //only if you guess correctly
+    player.state = "guessed";
+    const stat = game.stats.find(
+      (stat) => stat.playerId.toString() === playerId.toString(),
+    );
 
-            if (isChooser) {
-                return true;
-            }
+    if (stat) {
+      //your guessCorrect stats updated
+      stat.guessesCorrect += 1;
+    }
+    await game.save();
+    return {
+      correct: true,
+      game,
+    };
+  } //else js return false
+  return {
+    correct: false,
+    game,
+  };
+}
 
-            return (player.state ==="guessed");
-        });
+async function completeTurn(gameId) {
+  //this satisfies the test case where everybody "guessed" but before time
+  const game = await Game.findById(gameId);
+  const allDone = game.players.every((player) => {
+    //yo ion understand this properly but js gpt it,shld do
 
-    return {allDone,game};
+    const isChooser =
+      player.playerId.toString() ===
+      game.players[game.currentTurnIndex].playerId.toString();
+
+    if (isChooser) {
+      return true;
+    }
+
+    return player.state === "guessed";
+  });
+
+  return { allDone, game };
 }
 
 async function endGame(gameId) {
+  const game = await Game.findById(gameId);
 
-    const game =await Game.findById(gameId);
+  if (!game) {
+    throw new Error("Game not found");
+  }
 
-    if (!game) {
-        throw new Error('Game not found');
-    }
+  const results = game.stats.map((stat) => {
+    const score = stat.guessesCorrect * 100 - stat.totalGuessTimeMs / 1000;
 
-    const results =game.stats.map(
-            stat => {
+    return {
+      playerId: stat.playerId,
+      guessesCorrect: stat.guessesCorrect,
+      totalGuessTimeMs: stat.totalGuessTimeMs,
+      score,
+    };
+  });
 
-                const score =(stat.guessesCorrect * 100)
-                    -
-                    (stat.totalGuessTimeMs /1000);
+  results.sort((a, b) => b.score - a.score);
 
-                return {
-                    playerId:stat.playerId,guessesCorrect:stat.guessesCorrect,totalGuessTimeMs:stat.totalGuessTimeMs,score
-                };
-            }
-        );
+  results.forEach((result, index) => {
+    result.rank = index + 1;
+  });
 
-    results.sort(
-        (a, b) =>
-            b.score -
-            a.score
-    );
+  game.finalResults = results;
 
-    results.forEach(
-        (result, index) => {
+  game.gameState = "ended";
 
-            result.rank =index + 1;
-        }
-    );
+  game.finishedAt = new Date();
 
-    game.finalResults =results;
-    
-    game.gameState ='ended';
+  await game.save();
 
-    game.finishedAt = new Date();
-
-    await game.save();
-
-    return game;
+  return game;
 }
 async function deleteGame(gameId) {
-
-    await Game.findByIdAndDelete(gameId);
-
+  await Game.findByIdAndDelete(gameId);
 }
 module.exports = {
-    createGame,startTurn,submitSong,submitHint,fetchLyrics,generateAiResponse,createTurn,startGuessingPhase,submitGuess, endGame,completeTurn,deleteGame
+  createGame,
+  startTurn,
+  submitSong,
+  submitHint,
+  fetchLyrics,
+  generateAiResponse,
+  createTurn,
+  startGuessingPhase,
+  submitGuess,
+  endGame,
+  completeTurn,
+  deleteGame,
 };

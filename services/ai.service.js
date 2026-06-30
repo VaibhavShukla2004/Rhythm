@@ -55,7 +55,7 @@ ${lyrics}
 
 Hint:
 ${hint}
-`
+`,
   };
 };
 
@@ -63,10 +63,10 @@ ${hint}
 const getModifiedLyrics = async (lyrics, hint) => {
   try {
     const payload = generatePayload(lyrics, hint);
-    
+
     const client = new OpenAI({
       baseURL: endpoint,
-      apiKey: token
+      apiKey: token,
     });
 
     const response = await client.chat.completions.create({
@@ -74,26 +74,26 @@ const getModifiedLyrics = async (lyrics, hint) => {
       messages: [
         {
           role: "system",
-          content: payload.systemPrompt
+          content: payload.systemPrompt,
         },
         {
           role: "user",
-          content: payload.userMessage
-        }
+          content: payload.userMessage,
+        },
       ],
       response_format: {
-        type: "json_object"
-      }
+        type: "json_object",
+      },
     });
 
     return JSON.parse(response.choices[0].message.content).modifiedLyrics;
   } catch (error) {
     console.error("AI Service Error:", error);
     // You can throw a more generic error here if you want to hide OpenAI specifics from the controller
-    throw new Error("Failed to process lyrics through AI service."); 
+    throw new Error("Failed to process lyrics through AI service.");
   }
 };
 
 module.exports = {
-  getModifiedLyrics
+  getModifiedLyrics,
 };

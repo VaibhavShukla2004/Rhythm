@@ -1,11 +1,11 @@
-const aiService = require('../services/ai.service');
+const aiService = require("../services/ai.service");
 
 exports.modifyLyrics = async (req, res, next) => {
   try {
     const { lyrics, hint } = req.body;
 
     if (!lyrics || !hint) {
-      return res.status(400).json({ message: 'lyrics and hint required' });
+      return res.status(400).json({ message: "lyrics and hint required" });
     }
 
     // The controller delegates the entire process to a single service method

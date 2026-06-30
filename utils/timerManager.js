@@ -1,87 +1,79 @@
-const Game = require('../models/game.model');
+const Game = require("../models/game.model");
 const timers = new Map();
 
 function cancelTimer(gameId) {
+  const timer = timers.get(gameId.toString());
 
-    const timer =timers.get(gameId.toString());
-
-    if (timer) {
-        clearTimeout(timer);
-        timers.delete(gameId.toString());
-    }
+  if (timer) {
+    clearTimeout(timer);
+    timers.delete(gameId.toString());
+  }
 }
 
 function startChooserTimer(gameId) {
+  cancelTimer(gameId);
+  const timer = setTimeout(async () => {
+    await handleChooserTimeout(gameId);
+  }, 120000);
 
-    cancelTimer(gameId);
-    const timer = setTimeout(async () => {
-            await handleChooserTimeout(gameId);
-        },
-        120000
-    );
-
-    timers.set(gameId.toString(),timer);
+  timers.set(gameId.toString(), timer);
 }
 
 function startGuessTimer(gameId) {
+  cancelTimer(gameId);
 
-    cancelTimer(gameId);
+  const timer = setTimeout(async () => {
+    await handleGuessTimeout(gameId);
+  }, 120000);
 
-    const timer = setTimeout(
-        async () => {
-            await handleGuessTimeout(gameId);
-        },
-        120000
-    );
-
-    timers.set(gameId.toString(),timer);
+  timers.set(gameId.toString(), timer);
 }
 
 async function handleChooserTimeout(gameId) {
+  const game = await Game.findById(gameId);
 
-    const game =await Game.findById(gameId);
+  if (!game) return;
 
-    if (!game)return;
+  const chooser = game.players[game.currentTurnIndex];
 
-    const chooser =game.players[game.currentTurnIndex];
+  if (chooser.state !== "choosing-song" && chooser.state !== "choosing-hint")
+    return;
 
-    if (chooser.state !=='choosing-song' && chooser.state !=='choosing-hint')return;
+  const { skipTurn } = require("../orchestrators/game.orchestrator");
 
-    const {skipTurn} = require('../orchestrators/game.orchestrator');
-
-    await skipTurn(gameId,chooser.playerId);
+  await skipTurn(gameId, chooser.playerId);
 }
 
 async function handleGuessTimeout(gameId) {
+  const game = await Game.findById(gameId);
 
-    const game =await Game.findById(gameId);
+  if (!game) return;
 
-    if (!game) return;
+  game.players.forEach((player) => {
+    if (player.state === "guessing") {
+      player.state = "timed-out";
 
-    game.players.forEach(
-        player => {
+      const stat = game.stats.find(
+        (stat) => stat.playerId.toString() === player.playerId.toString(),
+      );
 
-            if (player.state ==='guessing') {
-                player.state ='timed-out';
+      if (stat) {
+        stat.totalGuessTimeMs += 120000;
+      }
+    }
+  });
 
-                const stat =game.stats.find(stat =>stat.playerId.toString() ===player.playerId.toString());
+  await game.save();
 
-                if (stat) {
-                    stat.totalGuessTimeMs +=120000;
-                }
-            }
-        }
-    );
+  const { emitGameUpdated } = require("./socketEmitter");
 
-    await game.save();
+  emitGameUpdated(game.roomCode, game);
 
-    const {emitGameUpdated} = require('./socketEmitter');
+  const {
+    completeGuessTimeoutTurn,
+  } = require("../orchestrators/game.orchestrator");
 
-    emitGameUpdated(game.roomCode,game);
-
-    const {completeGuessTimeoutTurn} = require('../orchestrators/game.orchestrator');
-
-    await completeGuessTimeoutTurn(gameId);
+  await completeGuessTimeoutTurn(gameId);
 }
 
-module.exports = {startChooserTimer,startGuessTimer,cancelTimer};
+module.exports = { startChooserTimer, startGuessTimer, cancelTimer };

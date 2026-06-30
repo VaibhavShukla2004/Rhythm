@@ -1,35 +1,35 @@
 const mongoose = require("mongoose");
 
-const profileSchema = new mongoose.Schema({
-
+const profileSchema = new mongoose.Schema(
+  {
     userId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-        required: true,
-        unique: true
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      unique: true,
     },
 
     gamesPlayed: {
-        type: Number,
-        default: 0
+      type: Number,
+      default: 0,
     },
 
-    songsChosen: [{
+    songsChosen: [
+      {
         songTitle: {
-            type: String,
-            required: true
+          type: String,
+          required: true,
         },
         artistName: {
-            type: String,
-            required: true
-        }
-    }]
-
-}, {
-    timestamps: true
-});
-
-module.exports = mongoose.model(
-    "Profile",
-    profileSchema
+          type: String,
+          required: true,
+        },
+      },
+    ],
+  },
+  {
+    timestamps: true,
+  },
 );
+
+module.exports = mongoose.model("Profile", profileSchema);
