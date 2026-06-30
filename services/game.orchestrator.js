@@ -5,14 +5,14 @@ const Game = require('../models/game.model');
 const {emitGameUpdated} = require('../utils/socket.emitter');
 //const timerManager =require('../utils/timerManager');
 
-exports.handleGameStart = async (roomCode, userId) => {
-    const { room, game } = await roomService.startGame(roomCode,userId);//calling roomService.startGame() which calls gameService.startGame() which returns back doc. After this players are all "stand-by",so states emitted.
-    emitGameUpdated(game.roomId,game);
-    await startNextTurn(game._id);
+exports.handleGameStart = async (roomCode, userId) => {//validates everything,creates game doc,emits event so that for everybody,the stand-by page is displayed
+    const { room, game } = await roomService.preGameValidation(roomCode,userId);//calling roomService.startGame() which calls gameService.startGame() which returns back doc. After this players are all "stand-by",so states emitted.
+    emitGameUpdated(game.roomId,game);//this is so that frontend gets reflected for everyone,when only host clicks startGame
+    await handleTurnStart(game._id);
 };
 
-const startNextTurn = async (gameId) => {
-
+const handleTurnStart = async (gameId) => {
+    const game =await gameService.startTurn(gameId);//finds chooser and sets his state
     emitGameUpdated(game.roomId, game);
     // everybody after here is either "choosing-song" or standby. Orchestrator's handleGameStart stops here.
 
@@ -21,7 +21,7 @@ const startNextTurn = async (gameId) => {
     return game;
 }
 
-exports.startNextTurn = startNextTurn;
+exports.handleTurnStart= handleTurnStart;
 
 exports.handleSongSubmission = async (gameId, playerId, songTitle, artistName) => {//only handles in-time and correct submissions.Frontend wont allow incorrect format,and out of time submissions handle by expiry logic and our submit guess already wont allow anybdy else to submit once index shifts(handles lag edge case)
     console.log('[game.orchestrator] handleSongSubmission called with', { gameId, playerId, songTitle, artistName });
@@ -44,16 +44,15 @@ exports.handleHintSubmission = async (gameId,playerId,playerHint) => {
     const game =await gameService.submitHint(gameId,playerId,playerHint);
 
     // SOCKET.IO
-    emitGameUpdated(game.roomId, game);//standy-by for all
+    emitGameUpdated(game.roomId, game);//standy-by for all,but "generating" state will render the generating page
 
     try {
         await gameService.createTurn(gameId);
 
         const guessingGame = await gameService.startGuessingPhase(gameId);
 
-        // SOCKET.IO
         emitGameUpdated(guessingGame.roomId, guessingGame);
-        // people shown their song-guessing states accordingly
+        // people shown the page of song-guessing state accordingly
 
         // TIMER
         //timerManager.startGuessTimer(gameId);
@@ -90,10 +89,12 @@ exports.retryTurn = async (gameId,playerId) => {
     game.pendingTurn={};
     await game.save();
 
-    return startNextTurn(gameId);
+    return handleTurnStart(gameId);
 };
 
 exports.skipTurn = async (gameId,playerId) => {
+
+    const game =await Game.findById(gameId);
 
     const chooserId = game.players[game.currentTurnIndex].playerId;
 
@@ -115,7 +116,7 @@ exports.skipTurn = async (gameId,playerId) => {
 
     await game.save();
 
-    return startNextTurn(gameId);
+    return handleTurnStart(gameId);
 };
 
 exports.handleGuessSubmission = async (gameId,playerId,guessedSong,guessedArtist) => {
@@ -148,7 +149,7 @@ exports.handleGuessSubmission = async (gameId,playerId,guessedSong,guessedArtist
     });
 
     await game.save();
-    return await startNextTurn(gameId);
+    return await handleTurnStart(gameId);
 };
 
 exports.completeGuessTimeoutTurn = async (gameId) => {
@@ -178,7 +179,7 @@ exports.completeGuessTimeoutTurn = async (gameId) => {
 
     await game.save();
 
-    return startNextTurn(gameId);
+    return handleTurnStart(gameId);
 }
 
 async function handleFinishGame(roomCode, userId) {
@@ -205,7 +206,7 @@ async function handleFinishGame(roomCode, userId) {
 
 module.exports = {
     handleGameStart: exports.handleGameStart,
-    startNextTurn,
+    handleTurnStart,
     handleSongSubmission: exports.handleSongSubmission,
     handleHintSubmission: exports.handleHintSubmission,
     retryTurn: exports.retryTurn,

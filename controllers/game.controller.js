@@ -1,5 +1,5 @@
 const gameOrchestrator = require('../services/game.orchestrator.js');
-
+const gameService=require('../services/game.service.js');
 exports.submitSong = async (req,res,next) => {
 
     try {
@@ -26,8 +26,8 @@ exports.submitSong = async (req,res,next) => {
 exports.submitHint = async (req,res,next) => {
 
     try {
-
-        const { gameId,playerHint } =req.body;
+        const {gameId}=req.params;
+        const { playerHint } =req.body;
 
         const playerId =req.user.userId;
 
@@ -49,8 +49,8 @@ exports.submitGuess = async (req,res,next) => {
 
     try {
 
-
-        const {gameId,guessedSong,guessedArtist} = req.body;
+        const{gameId}=req.params;
+        const {guessedSong,guessedArtist} = req.body;
 
         const playerId =req.user.userId;
         //console.log(playerId);
@@ -93,4 +93,17 @@ exports.skipTurn=async (req,res,next)=> {
         next(error);
     }
 }
+
+exports.callAi = async (req, res, next) => {
+    try {
+        const response = await gameService.generateAiResponse(
+            "Never gonna give you up,never gonna let you down",
+            "Exchange the places of up and down in this"
+        );
+
+        return res.status(200).json({ aiHint: response });
+    } catch (error) {
+        next(error);
+    }
+};
 

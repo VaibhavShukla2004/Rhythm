@@ -1,8 +1,8 @@
 const Game = require("../models/game.model");
 const {getUnsyncedLyrics} = require("../services/song.service");
-//const {generatePayload,getAIResponse}=require("../services/ai.service.js")
+const {getModifiedLyrics}=require("../services/ai.service.js")
 //the methods are in flow
-async function startGame(room) {//to set up game document-setting game to in-progress,putting in roomId and other stuff
+async function createGame(room) {//to set up game document-setting game to in-progress,putting in roomId and other stuff
 
     const players = room.players.map(player => ({
         playerId: player.userId//basically we are transforming the array of objects(hashmap) and transforming into an array which consists of multiple hashmaps of 1 indice-each of these indices map playerId to userid(do playerId=userId). .map() initially transforms the og array usinga  copy and returns it,og array not affected.
@@ -25,16 +25,12 @@ async function startGame(room) {//to set up game document-setting game to in-pro
     return game;//the game document goes to room.service.startGame.
 }
 
-async function startTurn(gameId) {//to just set chooser and his state to 
+async function startTurn(gameId) {//to just set chooser and his state to  
 
     const game = await Game.findById(gameId);
-    if (!game) {
-        throw new Error("Game not found");
-    }
+    if (!game) throw new Error("Game not found");
 
-    if (game.gameState !== "in-progress") {
-        throw new Error("Game not in progress");
-    }
+    if (game.gameState !== "in-progress") throw new Error("Game not in progress");
 
     const chooser = game.players[game.currentTurnIndex];//refernce to db.Finds who current chooser is
 
@@ -49,29 +45,13 @@ async function submitSong(gameId,playerId,songTitle,artistName) {//chooser submi
 
     const game = await Game.findById(gameId);
 
-    if (!game) {
-        throw new Error("Game not found");
-    }
+    if (!game) throw new Error("Game not found");
 
     const chooser =game.players[game.currentTurnIndex];
 
-    if (
-        chooser.playerId.toString() !==
-        playerId.toString()
-    ) {
-        throw new Error(
-            "Only current chooser can submit song"
-        );
-    }
-
-    if (
-        chooser.state !== "choosing-song"
-    ) {
-        throw new Error(
-            "Player not in choosing-song state"
-        );
-    }
-
+    if (chooser.playerId.toString() !==playerId.toString())throw new Error("Only current chooser can submit song");
+    
+    if (chooser.state !== "choosing-song")throw new Error("Player not in choosing-song state");//a chooser can either be in choosing-song and choosing-hint state
     game.pendingTurn.songTitle =songTitle;
     game.pendingTurn.artistName =artistName;
     chooser.state ="choosing-hint";
@@ -84,27 +64,19 @@ async function submitSong(gameId,playerId,songTitle,artistName) {//chooser submi
 async function submitHint(gameId,playerId,playerHint) {
 
     const game =await Game.findById(gameId);
-
-    if (!game) {
-        throw new Error("Game not found");
-    }
+    console.log(game);
+    if (!game) throw new Error("Game not found");
 
     const chooser =game.players[game.currentTurnIndex];
 
-    if (chooser.playerId.toString() !==playerId.toString()) {
-        throw new Error("Only current chooser can submit hint");
-    }
+    if (chooser.playerId.toString() !==playerId.toString()) throw new Error("Only current chooser can submit hint");
 
-    if (chooser.state !=="choosing-hint") {
-        throw new Error("Player not in choosing-hint state");
-    }
+    if (chooser.state !=="choosing-hint") throw new Error("Player not in choosing-hint state");
 
-    if (!playerHint) {
-        throw new Error("Hint is required");
-    }
+    if (!playerHint) throw new Error("Hint is required");
 
     game.pendingTurn.playerHint =playerHint;
-
+    game.pendingTurn.status ="generating";
     chooser.state ="stand-by";
     await game.save();
 
@@ -121,13 +93,14 @@ async function fetchLyrics(songTitle,artistName) {
     return lyrics;
 }
 
-async function generateAiHint(lyrics,playerHint) {
-    const aiPayLoad=await generatePayload(lyrics,playerHint);
+async function generateAiResponse(lyrics,playerHint) {
     try{
-    const aiResponse= await getAIResponse(aiPayload); 
-    return aiResponse;
-        }
+    const aiHint= await getModifiedLyrics(lyrics,playerHint); 
+    console.log(aiHint);
+    return aiHint;
+    }
     catch(error){
+        console.log(error);
         throw new Error("error in aiReponse");
     }
 
@@ -141,19 +114,15 @@ async function createTurn(gameId) {
 
     const game = await Game.findById(gameId);
 
-    if (!game) {
-        throw new Error("Game not found");
-    }
+    if (!game) throw new Error("Game not found");
 
     const {songTitle,artistName,playerHint} = game.pendingTurn;//get this information so you can send it to lyrics and ai API
 
-        game.pendingTurn.status ="generating";//why is this present?
-
         const lyrics = await fetchLyrics(songTitle,artistName);//first fetch lyrics
 
-        const aiResponse ="dummy"//await generateAiHint(lyrics,playerHint);//send to ai
+        const aiResponse =await generateAiResponse(lyrics,playerHint)//await generateAiHint(lyrics,playerHint);//send to ai
 
-        game.pendingTurn.aiResponse = "I'm a dummy AI hint";//save the ai response to display to guessers
+        game.pendingTurn.aiResponse = aiResponse;//save the ai response to display to guessers
 
         game.turns.push({
             chooserPlayerId:game.players[game.currentTurnIndex].playerId,
@@ -164,7 +133,7 @@ async function createTurn(gameId) {
             aiHint: aiResponse,
             status: "ready"
         });
-       game.pendingTurn.status = "success";//again need to find out whats up
+        game.pendingTurn.status = "success";//again need to find out whats up
         await game.save();
         return game;
 }
@@ -293,5 +262,5 @@ async function deleteGame(gameId) {
 
 }
 module.exports = {
-    startGame,startTurn,submitSong,submitHint,fetchLyrics,generateAiHint,createTurn,startGuessingPhase,submitGuess, endGame,completeTurn,deleteGame
+    createGame,startTurn,submitSong,submitHint,fetchLyrics,generateAiResponse,createTurn,startGuessingPhase,submitGuess, endGame,completeTurn,deleteGame
 };

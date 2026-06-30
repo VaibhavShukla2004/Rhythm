@@ -7,7 +7,6 @@ async function updateProfiles(game) {
             { $inc: { gamesPlayed: 1 } }
         );
     }
-    await Profile.save();
 
 for (const turn of game.turns) {
 
@@ -16,7 +15,6 @@ for (const turn of game.turns) {
         {$push: {songsChosen: {songTitle: turn.songTitle,artistName: turn.artistName}}}
     );
 }
-await Profile.save();
 }
 
 async function getProfile(userId) {

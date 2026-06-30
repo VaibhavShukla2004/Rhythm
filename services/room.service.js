@@ -23,9 +23,7 @@ async function generateRoomCode() {
 }
 //1.Generate room code 2.Create room-Add host to players[],Set expiry 3.Return room
 async function createRoom(hostId, maxPlayers) {
-const alreadyHostInAnotherRoom = await Room.findOne({
-    hostId
-});
+const alreadyHostInAnotherRoom = await Room.findOne({hostId});
 
 if (alreadyHostInAnotherRoom) throw new Error("You are already hosting a room");
 
@@ -56,22 +54,16 @@ async function getRoomDetails(roomCode) {//shld be available to players during a
         roomCode
     }).populate("players.userId", "name");//populate fetches details from ref table if fields are not specified. Sicne name is specified here,it fetches only name
 
-    if (!room) {
-        throw new Error("Room details not found");
-    }
+    if (!room) throw new Error("Room details not found");
 
     return room;
 }
 //1. Room exists? 2.Game already started? 3.Room full? 4.Room expired? 5.Already joined?
 async function joinRoom(roomCode, userId) {//room expiry logic is left
 
-    const room = await Room.findOne({
-        roomCode
-    });
+    const room = await Room.findOne({roomCode});
 
-    if (!room) {
-        throw new Error("Room not found");
-    }
+    if (!room) throw new Error("Room not found");
 
     if (room.gameStatus === "in-progress") {
         throw new Error("Game already started");
@@ -204,20 +196,19 @@ async function leaveRoom(roomCode, userId) {
     }
     return room;
 }
-async function startGame(roomCode, userId) {
+
+async function preGameValidation(roomCode, userId) {//validate room,host details 
     const room = await Room.findOne({ roomCode });
 
     if (!room) throw new Error("Room not found");
 
-    if (room.hostId.toString() !== userId.toString()) throw new Error("Only host can start game");
+    if (room.hostId.toString() !== userId.toString()) throw new Error("Only host can start game"); //only a person whos a host can start game
 
-    if (room.gameStatus === "in-progress") throw new Error("Game already in progress");
+    if (room.gameStatus === "in-progress") throw new Error("Game already in progress");//person cannot start game if a game in the room is already happening
 
-    if (room.players.length < 2) {
-        throw new Error("At least 2 players required");
-    }
+    if (room.players.length < 2) throw new Error("At least 2 players required");//more than one person required to start the game
 
-    const game = await gameService.startGame(room);
+    const game = await gameService.createGame(room);//actual game doc is created
 
     room.gameStatus = "in-progress";
     await room.save();
@@ -248,4 +239,4 @@ async function deleteRoom(roomCode) {
     });
 
 }
-module.exports={createRoom,getRoomDetails,joinRoom,transferHost,leaveRoom,startGame,deleteRoom,validateFinishGame};
+module.exports={createRoom,getRoomDetails,joinRoom,transferHost,leaveRoom,preGameValidation,deleteRoom,validateFinishGame};

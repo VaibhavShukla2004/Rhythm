@@ -53,8 +53,6 @@ exports.transferHost = async (req, res, next) => {
     }
 };
 
-
-
 exports.startGame=async (req, res, next)=> {
 
     try {
