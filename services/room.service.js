@@ -99,6 +99,8 @@ async function joinRoom(roomCode, userId) {
 async function transferHost(roomCode, newHostId = null, currentUserId = null) {
   //the params are thought for a manual transfer
 
+  console.log(newHostId);
+
   const room = await Room.findOne({
     roomCode,
   });
@@ -149,6 +151,8 @@ async function transferHost(roomCode, newHostId = null, currentUserId = null) {
     (player) => player.userId.toString() === newHostId.toString(),
   );
 
+  console.log(newHostExists);
+  console.log(room.players);
   if (!newHostExists) {
     throw new Error("New host must be in room");
   }
