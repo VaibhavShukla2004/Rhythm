@@ -6,7 +6,7 @@ const authMiddleware = require("../middlewares/auth.middleware");
 
 router.post("/submit-Song/:gameId", authMiddleware, gameController.submitSong);
 
-router.post("/submit-Hint/:gameId", authMiddleware,aiLimiter, gameController.submitHint);
+router.post("/submit-Hint/:gameId", authMiddleware, aiLimiter, gameController.submitHint);
 
 router.post("/submit-Guess/:gameId", authMiddleware, gameController.submitGuess);
 
