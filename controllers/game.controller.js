@@ -68,11 +68,11 @@ exports.submitGuess = async (req,res,next) => {
     }
 };
 
-exports.retryTurn=async(req,res,next)=> {
+exports.retryChoice=async(req,res,next)=> {
 
     try {
 
-        const game =await gameOrchestrator.retryTurn(req.params.gameId,req.user.userId);
+        const game =await gameOrchestrator.retryChoice(req.params.gameId,req.user.userId);
 
         res.status(200).json(game);
 
@@ -84,7 +84,6 @@ exports.retryTurn=async(req,res,next)=> {
 exports.skipTurn=async (req,res,next)=> {
 
     try {
-
         const game =await gameOrchestrator.skipTurn(req.params.gameId,req.user.userId);
 
         res.status(200).json(game);

@@ -118,11 +118,7 @@ async function transferHost(roomCode, newHostId = null,currentUserId = null) {//
 
     ///room.roomStatus = "ended";//means we are deleting room right away after last player leaves,for now
 
-    await room.save();
-
-    // Later:
-    // transfer stats
-    // delete room
+    await deleteRoom(roomCode);
 
     return null;
 }
@@ -145,9 +141,10 @@ async function transferHost(roomCode, newHostId = null,currentUserId = null) {//
 if (room.hostId.toString() !==currentUserId.toString()) {
     throw new Error("Only host can transfer host");
 }
-
+console.log(newHostId);
 const newHostExists = room.players.some(
-    player =>player.userId.toString() ===newHostId.toString());
+    player =>player.userId.toString() === newHostId.toString()
+);
 
     if (!newHostExists) {
         throw new Error("New host must be in room");

@@ -73,7 +73,7 @@ exports.handleHintSubmission = async (gameId,playerId,playerHint) => {
     }
 };
 
-exports.retryTurn = async (gameId,playerId) => {
+exports.retryChoice = async (gameId,playerId) => {
 
     const chooserId = game.players[game.currentTurnIndex].playerId;
 
@@ -118,7 +118,7 @@ exports.skipTurn = async (gameId,playerId) => {
 
     return handleTurnStart(gameId);
 };
-
+//handle guessCleanUp shld be called after timer called
 exports.handleGuessSubmission = async (gameId,playerId,guessedSong,guessedArtist) => {
     const result =await gameService.submitGuess(gameId,playerId,guessedSong,guessedArtist);
 
@@ -209,7 +209,7 @@ module.exports = {
     handleTurnStart,
     handleSongSubmission: exports.handleSongSubmission,
     handleHintSubmission: exports.handleHintSubmission,
-    retryTurn: exports.retryTurn,
+    retryChoice: exports.retryChoice,
     skipTurn: exports.skipTurn,
     handleGuessSubmission: exports.handleGuessSubmission,
     completeGuessTimeoutTurn: exports.completeGuessTimeoutTurn,
