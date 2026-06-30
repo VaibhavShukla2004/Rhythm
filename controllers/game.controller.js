@@ -71,12 +71,7 @@ exports.submitGuess = async (req, res, next) => {
   }
 };
 
-exports.retryTurn = async (req, res, next) => {
-  try {
-    const game = await gameOrchestrator.retryTurn(
-      req.params.gameId,
-      req.user.userId,
-    );
+exports.retryChoice=async(req,res,next)=> {
 
     res.status(200).json(game);
   } catch (error) {
@@ -84,18 +79,26 @@ exports.retryTurn = async (req, res, next) => {
   }
 };
 
-exports.skipTurn = async (req, res, next) => {
-  try {
-    const game = await gameOrchestrator.skipTurn(
-      req.params.gameId,
-      req.user.userId,
-    );
+        const game =await gameOrchestrator.retryChoice(req.params.gameId,req.user.userId);
 
-    res.status(200).json(game);
-  } catch (error) {
-    next(error);
-  }
-};
+        res.status(200).json(game);
+
+    } catch (error) {
+        next(error);
+    }
+}
+
+exports.skipTurn=async (req,res,next)=> {
+
+    try {
+        const game =await gameOrchestrator.skipTurn(req.params.gameId,req.user.userId);
+
+        res.status(200).json(game);
+
+    } catch (error) {
+        next(error);
+    }
+}
 
 exports.callAi = async (req, res, next) => {
   try {

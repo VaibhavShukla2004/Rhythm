@@ -19,7 +19,7 @@ router.post(
   gameController.submitGuess,
 );
 
-router.post("/retry-Turn/:gameId", authMiddleware, gameController.retryTurn);
+router.post("/retry-Choice/:gameId", authMiddleware, gameController.retryChoice);
 
 router.post("/skip-Turn/:gameId", authMiddleware, gameController.skipTurn);
 router.post("/test-ai", gameController.callAi);

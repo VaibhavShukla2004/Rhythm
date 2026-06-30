@@ -129,11 +129,50 @@ async function transferHost(roomCode, newHostId = null, currentUserId = null) {
       return null;
     }
 
-    const oldestPlayer = room.players.reduce(
-      //basically checking if(player[i].joinedAt < oldest.joinedAt) then oldest = player[i]
-      (oldest, current) =>
-        current.joinedAt < oldest.joinedAt ? current : oldest,
-    );
+    if (room.gameStatus === "in-progress") {
+        throw new Error("Cannot transfer host during game");
+    }
+
+    // Automatic transfer(called during leaveRoom())
+    if (!newHostId) {
+     console.log("What about here?");
+     if (room.players.length === 0) {
+
+    ///room.roomStatus = "ended";//means we are deleting room right away after last player leaves,for now
+
+    await deleteRoom(roomCode);
+
+    return null;
+}
+
+        const oldestPlayer = room.players.reduce(//basically checking if(player[i].joinedAt < oldest.joinedAt) then oldest = player[i] 
+            (oldest, current) =>
+                current.joinedAt < oldest.joinedAt
+                    ? current
+                    : oldest
+        );
+
+        room.hostId = oldestPlayer.userId;
+        console.log(room.hostId);
+        await room.save();
+
+        return room;
+    }
+
+    // Manual transfer
+if (room.hostId.toString() !==currentUserId.toString()) {
+    throw new Error("Only host can transfer host");
+}
+console.log(newHostId);
+const newHostExists = room.players.some(
+    player =>player.userId.toString() === newHostId.toString()
+);
+
+    if (!newHostExists) {
+        throw new Error("New host must be in room");
+    }
+
+    room.hostId = newHostId;
 
     room.hostId = oldestPlayer.userId;
     console.log(room.hostId);

@@ -108,8 +108,7 @@ exports.retryTurn = async (gameId, playerId) => {
   return handleTurnStart(gameId);
 };
 
-exports.skipTurn = async (gameId, playerId) => {
-  const game = await Game.findById(gameId);
+exports.retryChoice = async (gameId,playerId) => {
 
   const chooserId = game.players[game.currentTurnIndex].playerId;
 
@@ -133,19 +132,9 @@ exports.skipTurn = async (gameId, playerId) => {
 
   return handleTurnStart(gameId);
 };
-
-exports.handleGuessSubmission = async (
-  gameId,
-  playerId,
-  guessedSong,
-  guessedArtist,
-) => {
-  const result = await gameService.submitGuess(
-    gameId,
-    playerId,
-    guessedSong,
-    guessedArtist,
-  );
+//handle guessCleanUp shld be called after timer called
+exports.handleGuessSubmission = async (gameId,playerId,guessedSong,guessedArtist) => {
+    const result =await gameService.submitGuess(gameId,playerId,guessedSong,guessedArtist);
 
   if (!result.correct) {
     return result.game;
@@ -222,13 +211,13 @@ async function handleFinishGame(roomCode, userId) {
 }
 
 module.exports = {
-  handleGameStart: exports.handleGameStart,
-  handleTurnStart,
-  handleSongSubmission: exports.handleSongSubmission,
-  handleHintSubmission: exports.handleHintSubmission,
-  retryTurn: exports.retryTurn,
-  skipTurn: exports.skipTurn,
-  handleGuessSubmission: exports.handleGuessSubmission,
-  completeGuessTimeoutTurn: exports.completeGuessTimeoutTurn,
-  handleFinishGame,
+    handleGameStart: exports.handleGameStart,
+    handleTurnStart,
+    handleSongSubmission: exports.handleSongSubmission,
+    handleHintSubmission: exports.handleHintSubmission,
+    retryChoice: exports.retryChoice,
+    skipTurn: exports.skipTurn,
+    handleGuessSubmission: exports.handleGuessSubmission,
+    completeGuessTimeoutTurn: exports.completeGuessTimeoutTurn,
+    handleFinishGame
 };
