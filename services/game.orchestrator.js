@@ -152,36 +152,7 @@ exports.handleGuessSubmission = async (gameId,playerId,guessedSong,guessedArtist
     return await handleTurnStart(gameId);
 };
 
-exports.completeGuessTimeoutTurn = async (gameId) => {
-
-    const turnResult =await gameService.completeTurn(gameId);
-
-    if (!turnResult.allDone) return turnResult.game;
-
-    const game = turnResult.game;
-
-    game.currentTurnIndex++;
-
-    if (game.currentTurnIndex >=game.players.length){
-        //timerManager.cancelTimer(gameId);
-    const finishedGame =await gameService.endGame(gameId);
-    console.log(finishedGame.finalResults);
-    emitGameUpdated(finishedGame.roomId,finishedGame);
-    return finishedGame;
-}
-        
-
-    game.players.forEach(
-        player => {
-            player.state = 'stand-by';
-        }
-    );
-
-    await game.save();
-
-    return handleTurnStart(gameId);
-}
-
+//basically the clean up function
 async function handleFinishGame(roomCode, userId) {
 
     // Validate everything first
@@ -198,11 +169,64 @@ async function handleFinishGame(roomCode, userId) {
     // Delete room
     await roomService.deleteRoom(roomCode);
 
-
-
     return;
 }
 
+
+async function chooserTimeoutCleanUp(gameId) {
+
+    const game = await Game.findById(gameId);
+
+    if (!game) throw new Error("Game not found.");
+
+    // Reset pending turn
+    game.pendingTurn = {};
+
+    // Reset all player states
+    game.players.forEach(player => {
+        player.state = "stand-by";
+    });
+
+    // Move to next chooser
+    game.currentTurnIndex++;
+
+    await game.save();
+
+    if (game.currentTurnIndex >= game.players.length) {
+    const finishedGame =await gameService.endGame(gameId);
+    console.log(finishedGame.finalResults);
+    emitGameUpdated(finishedGame.roomId,finishedGame);
+    return finishedGame;
+    }
+
+    return await startTurn(gameId);
+}
+
+async function guesserTimeoutCleanUp(gameId) {
+
+    const game = await Game.findById(gameId);
+
+    if (!game)throw new Error("Game not found.");
+
+    // Reset all player states
+    game.players.forEach(player => {
+        player.state = "stand-by";
+    });
+
+    // Move to next chooser
+    game.currentTurnIndex++;
+
+    await game.save();
+
+    if (game.currentTurnIndex >= game.players.length) {
+    const finishedGame =await gameService.endGame(gameId);
+    console.log(finishedGame.finalResults);
+    emitGameUpdated(finishedGame.roomId,finishedGame);
+    return finishedGame;
+    }
+
+    return await startTurn(gameId);
+}
 
 module.exports = {
     handleGameStart: exports.handleGameStart,
@@ -212,6 +236,7 @@ module.exports = {
     retryChoice: exports.retryChoice,
     skipTurn: exports.skipTurn,
     handleGuessSubmission: exports.handleGuessSubmission,
-    completeGuessTimeoutTurn: exports.completeGuessTimeoutTurn,
+   chooserTimeoutCleanUp,
+   guesserTimeoutCleanUp,
     handleFinishGame
 };

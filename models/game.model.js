@@ -31,8 +31,8 @@ const GameSchema = new Schema(
 
     stats: [
       {
-        playerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-        totalGuessTimeMs: { type: Number, default: 0 },
+       playerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+       totalGuessTimeMs: { type: Number, default: 0 },
        guessesCorrect: { type: Number, default: 0 },
       }
     ],
