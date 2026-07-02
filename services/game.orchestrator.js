@@ -242,10 +242,10 @@ async function handleFinishGame(roomCode, userId) {
     // Delete room
     await roomService.deleteRoom(roomCode);
 
-
-
     return;
 }
+
+
 
 
 module.exports = {
@@ -256,8 +256,7 @@ module.exports = {
     retryChoice: exports.retryChoice,
     skipTurn: exports.skipTurn,
     handleGuessSubmission: exports.handleGuessSubmission,
-    completeGuessTimeoutTurn: exports.completeGuessTimeoutTurn,
-    handleFinishGame,
-    chooserTimeoutCleanup,
-    guesserTimeoutCleanup
+   chooserTimeoutCleanUp,
+   guesserTimeoutCleanUp,
+    handleFinishGame
 };
