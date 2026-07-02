@@ -10,6 +10,20 @@ const GameSchema = new Schema(
       index: true,
     },
 
+    maximumChoosingTime: {
+      type: Number,
+      default: 60000 // e.g., 60 seconds in milliseconds
+    },
+
+    maximumGuessingTime: {
+      type: Number,
+      default: 120000 // e.g., 120 seconds in milliseconds (2 mins)
+    },
+
+    // Inside your Game schema
+    turnExpiresAt: { type: Date, default: null },
+    timerType: { type: String, enum: ['choosing', 'guessing', null], default: null },
+
     gameState: {
       type: String,
       enum: ["in-progress", "ended"],

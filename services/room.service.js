@@ -21,7 +21,7 @@ async function generateRoomCode() {
   }
 }
 //1.Generate room code 2.Create room-Add host to players[],Set expiry 3.Return room
-async function createRoom(hostId, maxPlayers) {
+async function createRoom(hostId, maxPlayers, maximumChoosingTime = 60000, maximumGuessingTime = 120000) {
   const alreadyHostInAnotherRoom = await Room.findOne({ hostId });
 
   if (alreadyHostInAnotherRoom)
@@ -36,14 +36,12 @@ async function createRoom(hostId, maxPlayers) {
   const room = await Room.create({
     roomCode,
     hostId,
-    players: [
-      {
-        userId: hostId, //host automatically added to players after creating room
-      },
-    ],
+    players: [{ userId: hostId }],
     maxPlayers,
+    maximumChoosingTime, // Added to store game settings in the Room
+    maximumGuessingTime, // Added to store game settings in the Room
     expiresAt,
-  }); //no need to manually pass stuff that model already sets for us
+  });
 
   return room;
 }

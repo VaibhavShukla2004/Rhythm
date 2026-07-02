@@ -3,6 +3,7 @@ const cors = require("cors");
 const express = require("express");
 const { initializeSocket } = require("./config/socket");
 const { registerSocketHandlers } = require("./sockets/socket.handler");
+const { startTimeSweeper } = require("./utils/timerManager");
 
 require("dotenv").config();
 const connectDB = require("./config/db"); //import
