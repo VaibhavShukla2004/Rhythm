@@ -183,6 +183,7 @@ async function submitGuess(gameId,playerId,guessedSong,guessedArtist) {
 
         if (stat) {//your guessCorrect stats updated
             stat.guessesCorrect += 1;
+            stat.totalGuessTimeMs += new Date() - player.guessStartedAt;
         }
         await game.save();
         return {

@@ -8,6 +8,20 @@ const GameSchema = new Schema(
     gameState: { type: String, enum: ['in-progress', 'ended'],default: 'in-progress'},//starting before game starts,in-progress after round starts,ended when game ends and displays stat page
 
     currentTurnIndex: { type: Number, default: 0 },
+    
+    maximumChoosingTime: {
+      type: Number,
+      default: 60000 // e.g., 60 seconds in milliseconds
+    },
+
+    maximumGuessingTime: {
+      type: Number,
+      default: 120000 // e.g., 120 seconds in milliseconds (2 mins)
+    },
+
+    // Inside your Game schema
+    turnExpiresAt: { type: Date, default: null },
+    timerType: { type: String, enum: ['choosing', 'guessing', null], default: null },
 
     players: [
       {
