@@ -163,6 +163,7 @@ async function submitGuess(gameId,playerId,guessedSong,guessedArtist) {
             player =>
                 player.playerId.toString() === playerId.toString()
         );
+    console.log(playerId);
     if (!player) throw new Error("Player not found");//these are just checks,the frontend would be made as such that these endpoints arent exposed
     console.log("printing");
     console.log(player.playerId);

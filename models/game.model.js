@@ -11,12 +11,12 @@ const GameSchema = new Schema(
     
     maximumChoosingTime: {
       type: Number,
-      default: 60000 // e.g., 60 seconds in milliseconds
+      default: 180000 // e.g., 180 seconds in milliseconds
     },
 
     maximumGuessingTime: {
       type: Number,
-      default: 120000 // e.g., 120 seconds in milliseconds (2 mins)
+      default: 180000 // e.g., 180 seconds in milliseconds (3 mins)
     },
 
     // Inside your Game schema

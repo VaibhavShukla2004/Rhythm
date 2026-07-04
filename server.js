@@ -3,7 +3,7 @@ const cors = require('cors');
 const express = require('express');
 const {initializeSocket} = require('./config/socket');
 const {registerSocketHandlers} = require('./sockets/socket.handler');
-
+const{ startTimerSweeper} = require('./utils/timerManager');
 require('dotenv').config();
 const connectDB = require('./config/db');//import
 
@@ -34,6 +34,7 @@ app.use('/game',gameRoutes);
 const io = initializeSocket(server);
 registerSocketHandlers(io);
 server.listen(PORT, () => {
+    startTimerSweeper();
     console.log(`Server running on port ${PORT}`);//callback function that runs when server starts
 }); //here to router,middleware if required,then controller then service and if an error somewhere in the middle then error handled 
 

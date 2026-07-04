@@ -16,7 +16,7 @@ const handleTurnStart = async (gameId) => {
     emitGameUpdated(game.roomId, game);
     // everybody after here is either "choosing-song" or standby. Orchestrator's handleGameStart stops here.
 
-    timerManager.startChooserTimer(gameId);
+    timerManager.startChooserTimer(gameId); // Start the chooser timer with the maximumChoosingTime from the game document
 
     return game;
 }
@@ -44,7 +44,7 @@ exports.handleHintSubmission = async (gameId,playerId,playerHint) => {
 
     try {
         await gameService.createTurn(gameId);
-        timeManager.cancelTimer(gameId);
+        timerManager.cancelTimer(gameId);
         const guessingGame = await gameService.startGuessingPhase(gameId);
         timerManager.startGuessTimer(gameId);
         emitGameUpdated(guessingGame.roomId, guessingGame);
@@ -125,8 +125,8 @@ exports.handleGuessSubmission = async (gameId,playerId,guessedSong,guessedArtist
     // SOCKET.IO
     emitGameUpdated(result.game.roomId, result.game);
     const turnResult = await gameService.completeTurn(gameId);
-    timerManager.cancelTimer(gameId);
     if (!turnResult.allDone) return turnResult.game;
+    timerManager.cancelTimer(gameId);
     //timerManager.cancelTimer(gameId);
     const game =turnResult.game;
 
@@ -176,7 +176,7 @@ async function chooserTimeoutCleanup(gameId) {
     return finishedGame;
     }
 
-    return await startTurn(gameId);
+    return await handleTurnStart(gameId);
 }
 
 async function guesserTimeoutCleanup(gameId) {
@@ -192,7 +192,7 @@ async function guesserTimeoutCleanup(gameId) {
     // Add maximum guessing time for everyone who never guessed
     game.players.forEach(player => {
 
-    if (player.state === "guessing") {
+    if (player.state === "timed-out") {
 
         const stat = game.stats.find(
             stat =>
@@ -222,7 +222,7 @@ async function guesserTimeoutCleanup(gameId) {
     return finishedGame;
     }
 
-    return await startTurn(gameId);
+    return await handleTurnStart(gameId);
 }
 
 
@@ -256,7 +256,7 @@ module.exports = {
     retryChoice: exports.retryChoice,
     skipTurn: exports.skipTurn,
     handleGuessSubmission: exports.handleGuessSubmission,
-   chooserTimeoutCleanUp,
-   guesserTimeoutCleanUp,
+  chooserTimeoutCleanup,
+   guesserTimeoutCleanup,
     handleFinishGame
 };
