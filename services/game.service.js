@@ -147,18 +147,62 @@ async function createTurn(gameId) {
 async function startGuessingPhase(gameId) {
   //initially all guessers in "stand-by", now they are in guessing
 
-  const game = await Game.findById(gameId);
-  const chooserId = game.players[game.currentTurnIndex].playerId.toString();
-  game.players.forEach((player) => {
-    if (player.playerId.toString() === chooserId) {
-      player.state = "stand-by";
-    } else {
-      player.state = "guessing";
+    const game = await Game.findById(gameId);
+    const chooserId =game.players[game.currentTurnIndex].playerId.toString();
+    game.players.forEach(player => {
+
+        if (player.playerId.toString() ===chooserId) {
+            player.state = "stand-by";
+        }
+         else {
+            player.state = "guessing";
+        }
+        player.guessStartedAt =new Date();
+    });
+    await game.save();
+    return game;
+}
+
+async function submitGuess(gameId,playerId,guessedSong,guessedArtist) {
+    const game = await Game.findById(gameId);
+    if(game==null)throw new Error("Game doesnt exist");
+    const player =game.players.find(
+            player =>
+                player.playerId.toString() === playerId.toString()
+        );
+    console.log(playerId);
+    if (!player) throw new Error("Player not found");//these are just checks,the frontend would be made as such that these endpoints arent exposed
+    console.log("printing");
+    console.log(player.playerId);
+    console.log(player.state);
+    if (player.state !== "guessing") {//same shit here.A guessed player wouldnt be able to submit shit
+        throw new Error("Player not guessing");
     }
-    player.guessStartedAt = new Date();
-  });
-  await game.save();
-  return game;
+    const currentTurn = game.turns[game.turns.length - 1];
+    const songMatches =guessedSong.trim().toLowerCase() ===currentTurn.songTitle.trim().toLowerCase();
+    const artistMatches =guessedArtist.trim().toLowerCase() ===currentTurn.artistName.trim().toLowerCase();
+
+    if (songMatches &&artistMatches) { //only if you guess correctly
+        player.state = "guessed";
+        const stat = game.stats.find(
+                stat =>
+                    stat.playerId.toString() === playerId.toString()
+            );
+
+        if (stat) {//your guessCorrect stats updated
+            stat.guessesCorrect += 1;
+            stat.totalGuessTimeMs += new Date() - player.guessStartedAt;
+        }
+        await game.save();
+        return {
+            correct: true,
+            game
+        };
+    }//else js return false
+    return {
+        correct: false,
+        game
+    };
 }
 
 async function submitGuess(gameId, playerId, guessedSong, guessedArtist) {

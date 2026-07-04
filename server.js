@@ -1,12 +1,11 @@
-const http = require("http");
-const cors = require("cors");
-const express = require("express");
-const { initializeSocket } = require("./config/socket");
-const { registerSocketHandlers } = require("./sockets/socket.handler");
-const { startTimeSweeper } = require("./utils/timerManager");
-
-require("dotenv").config();
-const connectDB = require("./config/db"); //import
+const http = require('http');
+const cors = require('cors');
+const express = require('express');
+const {initializeSocket} = require('./config/socket');
+const {registerSocketHandlers} = require('./sockets/socket.handler');
+const{ startTimerSweeper} = require('./utils/timerManager');
+require('dotenv').config();
+const connectDB = require('./config/db');//import
 
 connectDB(); //then run
 const app = express();
@@ -16,27 +15,30 @@ const server = http.createServer(app);
 app.use(cors());
 app.use(express.json());
 
-const userRoutes = require("./routes/user.routes"); //imports everything that home/routes/user.routes exports
-const authRoutes = require("./routes/auth.routes");
-const songRoutes = require("./routes/song.routes");
-const roomRoutes = require("./routes/room.routes");
-const gameRoutes = require("./routes/game.routes");
-const aiRoutes = require("./routes/ai.routes");
+const userRoutes = require('./routes/user.routes');//imports everything that home/routes/user.routes exports
+const authRoutes = require('./routes/auth.routes');
+const songRoutes = require('./routes/song.routes');
+const roomRoutes = require('./routes/room.routes');
+const gameRoutes = require('./routes/game.routes');
+const aiRoutes = require('./routes/ai.routes');
+const profileRoutes = require('./routes/profile.routes');
 //middleware Every time a request hits your server, this middleware prints the HTTP Method (like GET or POST) and the URL (like /auth/login) directly into your terminal
 const { logger } = require("./middlewares/logger.middleware");
 app.use(logger);
 
-app.use("/auth", authRoutes); //if request starts with /auth, it will be handled by authRoutes
-app.use("/ai", aiRoutes);
-app.use("/user", userRoutes);
-app.use("/song", songRoutes);
-app.use("/room", roomRoutes);
-app.use("/game", gameRoutes);
+app.use('/auth',authRoutes);//if request starts with /auth, it will be handled by authRoutes
+app.use('/profile',profileRoutes);
+app.use('/ai',aiRoutes);
+app.use('/user',userRoutes);
+app.use('/song',songRoutes);
+app.use('/room',roomRoutes);
+app.use('/game',gameRoutes);
 const io = initializeSocket(server);
 registerSocketHandlers(io);
 server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`); //callback function that runs when server starts
-}); //here to router,middleware if required,then controller then service and if an error somewhere in the middle then error handled
+    startTimerSweeper();
+    console.log(`Server running on port ${PORT}`);//callback function that runs when server starts
+}); //here to router,middleware if required,then controller then service and if an error somewhere in the middle then error handled 
 
 //error handling
 app.use((err, req, res, next) => {

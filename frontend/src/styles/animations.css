@@ -1,0 +1,119 @@
+/* ============================================================
+   RHYTHM — Reusable Keyframe Animations
+   ============================================================ */
+
+/* Fade in */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Fade in + slide up */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Fade in + slide down */
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scale in (pop) */
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Pulse glow — for timers / attention states */
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 12px rgba(139, 92, 246, 0.3); }
+  50%       { box-shadow: 0 0 32px rgba(139, 92, 246, 0.7); }
+}
+
+/* Pulse glow red — for low time warning */
+@keyframes pulseGlowRed {
+  0%, 100% { box-shadow: 0 0 12px rgba(239, 68, 68, 0.3); }
+  50%       { box-shadow: 0 0 32px rgba(239, 68, 68, 0.7); }
+}
+
+/* Sound wave bars — idle/standby animation */
+@keyframes soundBar {
+  0%, 100% { transform: scaleY(0.3); }
+  50%       { transform: scaleY(1); }
+}
+
+/* Spin */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Shimmer / skeleton loading */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+/* Score count-up bounce */
+@keyframes scoreBounce {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+/* --- Animation Utility Classes --- */
+
+.anim-fade-in {
+  animation: fadeIn var(--transition-slow) ease both;
+}
+
+.anim-fade-in-up {
+  animation: fadeInUp 0.5s ease both;
+}
+
+.anim-fade-in-down {
+  animation: fadeInDown 0.5s ease both;
+}
+
+.anim-scale-in {
+  animation: scaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.anim-pulse-glow {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+.anim-pulse-glow-red {
+  animation: pulseGlowRed 1s ease-in-out infinite;
+}
+
+.anim-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Stagger delay helpers */
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+.delay-400 { animation-delay: 400ms; }
+.delay-500 { animation-delay: 500ms; }

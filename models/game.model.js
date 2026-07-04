@@ -31,6 +31,20 @@ const GameSchema = new Schema(
     }, //starting before game starts,in-progress after round starts,ended when game ends and displays stat page
 
     currentTurnIndex: { type: Number, default: 0 },
+    
+    maximumChoosingTime: {
+      type: Number,
+      default: 180000 // e.g., 180 seconds in milliseconds
+    },
+
+    maximumGuessingTime: {
+      type: Number,
+      default: 180000 // e.g., 180 seconds in milliseconds (3 mins)
+    },
+
+    // Inside your Game schema
+    turnExpiresAt: { type: Date, default: null },
+    timerType: { type: String, enum: ['choosing', 'guessing', null], default: null },
 
     players: [
       {
@@ -54,10 +68,10 @@ const GameSchema = new Schema(
 
     stats: [
       {
-        playerId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-        totalGuessTimeMs: { type: Number, default: 0 },
-        guessesCorrect: { type: Number, default: 0 },
-      },
+       playerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+       totalGuessTimeMs: { type: Number, default: 0 },
+       guessesCorrect: { type: Number, default: 0 },
+      }
     ],
 
     pendingTurn: {
