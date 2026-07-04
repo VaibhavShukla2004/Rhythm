@@ -7,6 +7,7 @@ import RegisterPage from './pages/Auth/RegisterPage';
 import HomePage from './pages/Home/HomePage';
 import RoomLobbyPage from './pages/Room/RoomLobbyPage';
 import GamePage from './pages/Game/GamePage';
+import ProfilePage from './pages/Profile/ProfilePage';
 
 function App() {
   return (
@@ -38,6 +39,14 @@ function App() {
           element={
             <ProtectedRoute>
               <GamePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
             </ProtectedRoute>
           }
         />

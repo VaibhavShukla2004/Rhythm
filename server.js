@@ -21,11 +21,13 @@ const songRoutes = require('./routes/song.routes');
 const roomRoutes = require('./routes/room.routes');
 const gameRoutes = require('./routes/game.routes');
 const aiRoutes = require('./routes/ai.routes');
+const profileRoutes = require('./routes/profile.routes');
 //middleware Every time a request hits your server, this middleware prints the HTTP Method (like GET or POST) and the URL (like /auth/login) directly into your terminal
 const { logger } = require('./middlewares/logger.middleware');
 app.use(logger);
 
 app.use('/auth',authRoutes);//if request starts with /auth, it will be handled by authRoutes
+app.use('/profile',profileRoutes);
 app.use('/ai',aiRoutes);
 app.use('/user',userRoutes);
 app.use('/song',songRoutes);
