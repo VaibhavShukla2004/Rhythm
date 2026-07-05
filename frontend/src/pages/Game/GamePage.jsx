@@ -7,8 +7,13 @@ import { useSocket } from '../../socket/useSocket';
 import { getMyPlayerState } from '../../utils/playerState';
 
 // Sub-views
-import ChoosingPage from './ChoosingPage';
-import StandbyPage from './StandbyPage';
+import ChoosingPage      from './ChoosingPage';
+import ChoosingHintPage  from './ChoosingHintPage';
+import StandbyPage       from './StandbyPage';
+import GuessingPage      from './GuessingPage';
+import GuessedPage       from './GuessedPage';
+import ScorecardPage     from './ScorecardPage';
+import ErrorPage         from './ErrorPage';
 
 /**
  * GamePage — smart router.
@@ -17,20 +22,21 @@ import StandbyPage from './StandbyPage';
  *
  * Player states (from game.model.js):
  *   'choosing-song'  → ChoosingPage
- *   'choosing-hint'  → ChoosingPage  (still their turn)
- *   'stand-by'       → StandbyPage
- *   'guessing'       → GuessingPage  (coming soon)
- *   'guessed'        → StandbyPage   (waiting for others)
- *   'timed-out'      → StandbyPage
+ *   'choosing-hint'  → ChoosingHintPage
+ *   'stand-by'       → StandbyPage  (AI generating OR watching others guess)
+ *   'guessing'       → GuessingPage
+ *   'guessed'        → GuessedPage
+ *   'timed-out'      → StandbyPage  (next turn loading)
  *
- * gameState 'ended'  → ResultsPage   (coming soon)
+ * pendingTurn.status === 'failing' → ErrorPage  (overrides all)
+ * game.gameState    === 'ended'    → ScorecardPage
  */
 const GamePage = () => {
-  const { gameId } = useParams();
-  const navigate = useNavigate();
-  const { userId } = useAuthStore();
-  const room = useRoomStore((s) => s.room);
-  const game = useGameStore((s) => s.game);
+  const { gameId }  = useParams();
+  const navigate    = useNavigate();
+  const { userId }  = useAuthStore();
+  const room        = useRoomStore((s) => s.room);
+  const game        = useGameStore((s) => s.game);
 
   // roomCode needed for socket — get from store (set when create/join/lobby ran)
   const roomCode = room?.roomCode;
@@ -53,35 +59,33 @@ const GamePage = () => {
         <div className="home-orb home-orb--2" />
         <div className="lobby-loading">
           <div className="profile-spinner" />
-          <p style={{ color: 'var(--clr-text-muted)' }}>Loading game...</p>
+          <p style={{ color: 'var(--clr-text-muted)' }}>Loading game…</p>
         </div>
       </div>
     );
   }
 
-  // Determine my current state in this game
+  // ── Global overrides ────────────────────────────────────
+
+  // AI failed → show error page for everyone
+  if (game.pendingTurn?.status === 'failing') {
+    return <ErrorPage />;
+  }
+
+  // Game ended → show scorecard for everyone
+  if (game.gameState === 'ended') {
+    return <ScorecardPage />;
+  }
+
+  // ── Per-player state routing ────────────────────────────
   const myState = getMyPlayerState(game, userId);
 
-  // Route to correct sub-view
-  if (game.gameState === 'ended') {
-    // Results page — coming soon
-    return (
-      <div className="game-subpage">
-        <div className="home-orb home-orb--1" />
-        <div className="game-subpage-card anim-scale-in">
-          <div className="game-subpage-icon">🏆</div>
-          <h1 className="game-subpage-title gradient-text">Game Over!</h1>
-          <p className="game-subpage-desc">Results page coming soon...</p>
-        </div>
-      </div>
-    );
-  }
+  if (myState === 'choosing-song')  return <ChoosingPage />;
+  if (myState === 'choosing-hint')  return <ChoosingHintPage />;
+  if (myState === 'guessing')       return <GuessingPage />;
+  if (myState === 'guessed')        return <GuessedPage />;
 
-  if (myState === 'choosing-song' || myState === 'choosing-hint') {
-    return <ChoosingPage />;
-  }
-
-  // stand-by, guessing, guessed, timed-out, or unknown → StandbyPage for now
+  // stand-by, timed-out, or unknown → StandbyPage
   return <StandbyPage />;
 };
 
