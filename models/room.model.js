@@ -42,25 +42,12 @@ const roomSchema = new mongoose.Schema(
       max: 10, //hardCoded for now
     },
 
-    gamesPlayed: {
-      type: Number, //so as to display useful match history
-      default: 0,
-    },
-
     gameStatus: {
-      type: String,
-      enum: ["idle", "in-progress"], //i think dont let people do certain stuff when game is in progress. Dont mistake it such that once it goes from idle to in-progress,it will again come back to idle. After this it will straight up get deleted
-      default: "idle",
-    },
-    expiresAt: {
-      //to remove room logic when post expiry
-      type: Date,
-      required: true,
-    },
-    lastActivityAt: {
-      type: Date,
-      default: Date.now,
-    },
+        type: String,
+        enum: ["idle", "in-progress"],//i think dont let people do certain stuff when game is in progress. Dont mistake it such that once it goes from idle to in-progress,it will again come back to idle. After this it will straight up get deleted
+        default: "idle"
+  }
+  
   },
   {
     timestamps: true,
