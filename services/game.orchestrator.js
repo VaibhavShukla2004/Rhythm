@@ -71,6 +71,7 @@ exports.handleHintSubmission = async (gameId,playerId,playerHint) => {
 
 exports.retryChoice = async (gameId,playerId) => {
 
+    const game =await Game.findById(gameId);
     const chooserId = game.players[game.currentTurnIndex].playerId;
 
     if (chooserId.toString() !== playerId.toString()) {
@@ -149,7 +150,7 @@ exports.handleGuessSubmission = async (gameId,playerId,guessedSong,guessedArtist
 };
 
 async function chooserTimeoutCleanup(gameId) {
-
+  console.log("Am i here"); 
     const game = await Game.findById(gameId);
 
     if (!game) {
@@ -180,7 +181,7 @@ async function chooserTimeoutCleanup(gameId) {
 }
 
 async function guesserTimeoutCleanup(gameId) {
-
+   console.log("I do get called");
     const game = await Game.findById(gameId);
 
     if (!game) {
@@ -215,12 +216,13 @@ async function guesserTimeoutCleanup(gameId) {
     await game.save();
 
     if (game.currentTurnIndex >= game.players.length) {
-        const finishedGame =await gameService.endGame(gameId);
-   console.log(finishedGame.finalResults);
+    console.log("Do i come here?");
+    const finishedGame =await gameService.endGame(gameId);
+    console.log(finishedGame.finalResults);
     emitGameUpdated(finishedGame.roomId,finishedGame);
     return finishedGame;
     }
-    
+    console.log("outside");
     return await handleTurnStart(gameId);
 }
 
