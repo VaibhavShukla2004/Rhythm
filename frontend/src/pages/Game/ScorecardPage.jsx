@@ -24,13 +24,16 @@ const ScorecardPage = () => {
   const hostId = room?.hostId?._id || room?.hostId;
   const amHost = hostId && userId && hostId.toString() === userId.toString();
 
-  // Build a name lookup from game.players (they may be populated)
+  // Build a name lookup from room.players (which is populated)
   const nameLookup = {};
-  (game?.players ?? []).forEach((p) => {
-    const pid  = p.playerId?._id || p.playerId;
-    const name = p.playerId?.name || 'Unknown';
+  (room?.players ?? []).forEach((p) => {
+    const pid  = p.userId?._id || p.userId;
+    const name = p.userId?.name || 'Unknown';
     if (pid) nameLookup[pid.toString()] = name;
   });
+
+  const clearRoom = useRoomStore((s) => s.clearRoom);
+  const clearGame = useGameStore((s) => s.clearGame);
 
   const handleFinishGame = async () => {
     if (!roomCode) return;
@@ -38,7 +41,13 @@ const ScorecardPage = () => {
     setFinishError('');
     try {
       await finishGame(roomCode);
-      // Orchestrator emits null → GamePage navigates everyone home
+      
+      // We don't need to rely on the socket for the person who clicked the button!
+      // Instantly wipe the local state and navigate home.
+      clearRoom();
+      clearGame();
+      navigate('/');
+      
     } catch (err) {
       setFinishError(
         err.response?.data?.message ||

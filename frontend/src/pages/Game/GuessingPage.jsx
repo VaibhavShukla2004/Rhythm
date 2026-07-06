@@ -6,6 +6,7 @@ import { submitGuess } from '../../api/game.api';
 const GuessingPage = () => {
   const { userId } = useAuthStore();
   const game = useGameStore((s) => s.game);
+  const setGame = useGameStore((s) => s.setGame);
 
   const [guessedSong, setGuessedSong] = useState('');
   const [guessedArtist, setGuessedArtist] = useState('');
@@ -28,12 +29,21 @@ const GuessingPage = () => {
 
     try {
       const { data } = await submitGuess(game._id, guessedSong.trim(), guessedArtist.trim());
-      if (data?.correct === false) {
+      
+      const returnedGame = data?.game;
+      const me = returnedGame?.players?.find(
+        (p) => p.playerId?.toString() === userId?.toString() || p.playerId?._id?.toString() === userId?.toString()
+      );
+
+      if (me && me.state === 'guessing') {
         // Wrong guess — stay on page, show feedback
         setWrongGuess(true);
         setSubmitting(false);
+      } else if (returnedGame) {
+        // Correct guess! Instantly update global state to unmount this page
+        // (Don't wait for socket which might be delayed)
+        setGame(returnedGame);
       }
-      // If correct → socket fires game-updated → state becomes 'guessed' → GamePage re-routes
     } catch (err) {
       setError(
         err.response?.data?.message ||

@@ -1,5 +1,6 @@
 import { useGameStore } from '../../store/useGameStore';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useRoomStore } from '../../store/useRoomStore';
 import { getChooser, getMyPlayerState } from '../../utils/playerState';
 
 // State labels and icons for the player list
@@ -15,6 +16,14 @@ const STATE_CONFIG = {
 const StandbyPage = () => {
   const { userId } = useAuthStore();
   const game = useGameStore((s) => s.game);
+  const room = useRoomStore((s) => s.room);
+
+  const nameLookup = {};
+  (room?.players ?? []).forEach((p) => {
+    const pid  = p.userId?._id || p.userId;
+    const name = p.userId?.name || 'Unknown';
+    if (pid) nameLookup[pid.toString()] = name;
+  });
 
   const chooser    = getChooser(game);
   const myState    = getMyPlayerState(game, userId);
@@ -25,13 +34,14 @@ const StandbyPage = () => {
   const chooserName = (() => {
     if (!chooser) return 'Chooser';
     // playerId may be populated object or plain string id
-    return chooser.playerId?.name || 'Chooser';
+    const pid = chooser.playerId?._id || chooser.playerId;
+    return nameLookup[pid?.toString()] || 'Chooser';
   })();
 
   // Build display list — map player states
   const playerRows = (game?.players ?? []).map((p) => {
     const pid    = p.playerId?._id || p.playerId;
-    const pname  = p.playerId?.name || 'Player';
+    const pname  = nameLookup[pid?.toString()] || 'Player';
     const isMe   = pid?.toString() === userId?.toString();
     const isChooser = pid?.toString() === (chooser?.playerId?._id || chooser?.playerId)?.toString();
     const cfg    = STATE_CONFIG[p.state] || { label: p.state, icon: '❓', cls: '' };
