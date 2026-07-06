@@ -12,8 +12,14 @@ router.post("/join", authMiddleware, roomController.joinRoom);
 
 router.post("/leave", authMiddleware, roomController.leaveRoom);
 
-router.post("/transfer-host",authMiddleware,roomController.transferHost);
+router.post("/transfer-host", authMiddleware, roomController.transferHost);
 
-router.post("/start-game",authMiddleware,roomController.startGame);
-router.post("/finish-game/:roomCode",authMiddleware,roomController.finishGame);
+router.post("/start-game", authMiddleware, roomController.startGame);
+
+router.post(
+  "/finish-game/:roomCode",
+  authMiddleware,
+  roomController.finishGame,
+);
+
 module.exports = router;

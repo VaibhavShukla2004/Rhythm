@@ -1,28 +1,30 @@
 // Run this test file: npm test -- tests/controllers/song.controller.test.js
-const songService = require('../../services/song.service');
-const { getUnsyncedLyrics } = require('../../controllers/song.controller');
+const songService = require("../../services/song.service");
+const { getUnsyncedLyrics } = require("../../controllers/song.controller");
 
-jest.mock('../../services/song.service');
+jest.mock("../../services/song.service");
 
-describe('song.controller', () => {
-  it('should return 400 when track_name or artist_name is missing', async () => {
-    const req = { query: { track_name: 'Hello' } };
+describe("song.controller", () => {
+  it("should return 400 when track_name or artist_name is missing", async () => {
+    const req = { query: { track_name: "Hello" } };
     const res = {
       status: jest.fn().mockReturnThis(),
-      json: jest.fn()
+      json: jest.fn(),
     };
 
     await getUnsyncedLyrics(req, res);
 
     expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({ message: 'track name and artist name required' });
+    expect(res.json).toHaveBeenCalledWith({
+      message: "track name and artist name required",
+    });
   });
 
-  it('should return 404 when lyrics are not found', async () => {
-    const req = { query: { track_name: 'Hello', artist_name: 'Adele' } };
+  it("should return 404 when lyrics are not found", async () => {
+    const req = { query: { track_name: "Hello", artist_name: "Adele" } };
     const res = {
       status: jest.fn().mockReturnThis(),
-      json: jest.fn()
+      json: jest.fn(),
     };
 
     songService.getUnsyncedLyrics.mockResolvedValue(null);
@@ -30,17 +32,17 @@ describe('song.controller', () => {
     await getUnsyncedLyrics(req, res);
 
     expect(res.status).toHaveBeenCalledWith(404);
-    expect(res.json).toHaveBeenCalledWith({ message: 'Lyrics not found' });
+    expect(res.json).toHaveBeenCalledWith({ message: "Lyrics not found" });
   });
 
-  it('should return lyrics when found', async () => {
-    const req = { query: { track_name: 'Hello', artist_name: 'Adele' } };
+  it("should return lyrics when found", async () => {
+    const req = { query: { track_name: "Hello", artist_name: "Adele" } };
     const res = { json: jest.fn() };
 
-    songService.getUnsyncedLyrics.mockResolvedValue('Some lyrics');
+    songService.getUnsyncedLyrics.mockResolvedValue("Some lyrics");
 
     await getUnsyncedLyrics(req, res);
 
-    expect(res.json).toHaveBeenCalledWith('Some lyrics');
+    expect(res.json).toHaveBeenCalledWith("Some lyrics");
   });
 });

@@ -1,8 +1,8 @@
-const mongoose = require('mongoose');
-const Room = require('../../models/room.model');
+const mongoose = require("mongoose");
+const Room = require("../../models/room.model");
 
-describe('room.model', () => {
-  it('should define room schema with required fields', () => {
+describe("room.model", () => {
+  it("should define room schema with required fields", () => {
     const schemaPaths = Room.schema.paths;
 
     expect(schemaPaths.roomCode.options.required).toBe(true);

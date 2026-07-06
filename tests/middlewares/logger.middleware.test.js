@@ -1,8 +1,8 @@
-const { logger } = require('../../middlewares/logger.middleware');
+const { logger } = require("../../middlewares/logger.middleware");
 
-describe('logger.middleware', () => {
-  it('should log method and url and call next', () => {
-    const req = { method: 'GET', url: '/test' };
+describe("logger.middleware", () => {
+  it("should log method and url and call next", () => {
+    const req = { method: "GET", url: "/test" };
     const res = {};
     const next = jest.fn();
 
@@ -10,7 +10,7 @@ describe('logger.middleware', () => {
 
     logger(req, res, next);
 
-    expect(console.log).toHaveBeenCalledWith('GET /test');
+    expect(console.log).toHaveBeenCalledWith("GET /test");
     expect(next).toHaveBeenCalled();
   });
 });

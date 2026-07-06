@@ -3,7 +3,7 @@ const router = express.Router();
 // We import the controller, which holds the actual logic
 const authController = require("../controllers/auth.controller");
 
-router.post("/register", authController.register);// hitting /register after we are already under /auth
+router.post("/register", authController.register); // hitting /register after we are already under /auth
 router.post("/login", authController.login);
 
 module.exports = router;

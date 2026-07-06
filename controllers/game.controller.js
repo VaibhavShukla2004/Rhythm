@@ -1,108 +1,257 @@
-const gameOrchestrator = require('../services/game.orchestrator.js');
-const gameService=require('../services/game.service.js');
-exports.submitSong = async (req,res,next) => {
+const roomService = require('../services/room.service');
+const gameService = require('../services/game.service');
+const profileService = require("../services/profile.service");
+const Game = require('../models/game.model');
+const {emitGameUpdated} = require('../utils/socket.emitter');
+//const timerManager =require('../utils/timerManager');
 
-    try {
-        const { gameId } =req.params;
-        console.log(gameId);
-        const {songTitle,artistName} = req.body;
-
-        const playerId =req.user.userId;
-
-        const game =await gameOrchestrator.handleSongSubmission(gameId,playerId,songTitle,artistName);
-
-        res.status(200).json({
-            success: true,
-            message:
-            "Song submitted successfully",
-            game
-        });
-
-    } catch (error) {
-        next(error);
-    }
+exports.handleGameStart = async (roomCode, userId) => {//validates everything,creates game doc,emits event so that for everybody,the stand-by page is displayed
+    const { room, game } = await roomService.preGameValidation(roomCode,userId);//calling roomService.startGame() which calls gameService.startGame() which returns back doc. After this players are all "stand-by",so states emitted.
+    emitGameUpdated(game.roomId,game);//this is so that frontend gets reflected for everyone,when only host clicks startGame
+    await handleTurnStart(game._id);
 };
 
-exports.submitHint = async (req,res,next) => {
+const handleTurnStart = async (gameId) => {
+    const game =await gameService.startTurn(gameId);//finds chooser and sets his state
+    emitGameUpdated(game.roomId, game);
+    // everybody after here is either "choosing-song" or standby. Orchestrator's handleGameStart stops here.
 
-    try {
-        const {gameId}=req.params;
-        const { playerHint } =req.body;
+    //timerManager.startChooserTimer(gameId);
 
-        const playerId =req.user.userId;
-
-        const game = await gameOrchestrator.handleHintSubmission(gameId,playerId,playerHint);
-
-        res.status(200).json({
-            success: true,
-            message:
-                "Hint submitted successfully",
-            game
-        });
-
-    } catch (error) {
-        next(error);
-    }
-};
-
-exports.submitGuess = async (req,res,next) => {
-
-    try {
-
-        const{gameId}=req.params;
-        const {guessedSong,guessedArtist} = req.body;
-
-        const playerId =req.user.userId;
-        //console.log(playerId);
-        const game =await gameOrchestrator.handleGuessSubmission(gameId,playerId,guessedSong,guessedArtist);
-
-        res.status(200).json({
-            success: true,
-            game
-        });
-
-    } catch (error) {
-
-        next(error);
-
-    }
-};
-
-exports.retryChoice=async(req,res,next)=> {
-
-    try {
-
-        const game =await gameOrchestrator.retryChoice(req.params.gameId,req.user.userId);
-
-        res.status(200).json(game);
-
-    } catch (error) {
-        next(error);
-    }
+    return game;
 }
 
-exports.skipTurn=async (req,res,next)=> {
+exports.handleTurnStart= handleTurnStart;
+
+exports.handleSongSubmission = async (gameId, playerId, songTitle, artistName) => {//only handles in-time and correct submissions.Frontend wont allow incorrect format,and out of time submissions handle by expiry logic and our submit guess already wont allow anybdy else to submit once index shifts(handles lag edge case)
+    console.log('[game.orchestrator] handleSongSubmission called with', { gameId, playerId, songTitle, artistName });
+    const game = await gameService.submitSong(gameId, playerId, songTitle, artistName);
+
+    // SOCKET.IO
+    emitGameUpdated(game.roomId, game);
+    // emit game-state-updated
+    // chooser now sees hint page others remain standby
+
+    // TIMER LOGIC(we are not planning on implementing it here)
+    // cancel chooser-song timer
+    // start chooser-hint timer
+
+    return game;
+};
+
+exports.handleHintSubmission = async (gameId,playerId,playerHint) => {
+    //timerManager.cancelTimer(gameId);
+    const game =await gameService.submitHint(gameId,playerId,playerHint);
+
+    // SOCKET.IO
+    emitGameUpdated(game.roomId, game);//standy-by for all,but "generating" state will render the generating page
 
     try {
-        const game =await gameOrchestrator.skipTurn(req.params.gameId,req.user.userId);
+        await gameService.createTurn(gameId);
 
-        res.status(200).json(game);
+        const guessingGame = await gameService.startGuessingPhase(gameId);
 
+        emitGameUpdated(guessingGame.roomId, guessingGame);
+        // people shown the page of song-guessing state accordingly
+
+        // TIMER
+        //timerManager.startGuessTimer(gameId);
+
+        return guessingGame;
     } catch (error) {
-        next(error);
+        console.log(error);
+        const failedGame =await Game.findById(gameId);
+
+        failedGame.pendingTurn.status = 'failing';
+
+        await failedGame.save();
+
+        // SOCKET.IO
+        emitGameUpdated(failedGame.roomId, failedGame);//a page displayed where retry and skip turn buttons can be displayed.
+
+        return failedGame;
     }
+};
+
+exports.retryChoice = async (gameId,playerId) => {
+
+    const chooserId = game.players[game.currentTurnIndex].playerId;
+
+    if (chooserId.toString() !== playerId.toString()) {
+        throw new Error('Only chooser can retry');
+    }
+
+    if (game.pendingTurn.status !== 'failing') {
+        throw new Error('Turn is not failing');
+    }
+
+    //game.pendingTurn.status ="pending";
+    game.pendingTurn={};
+    await game.save();
+
+    return handleTurnStart(gameId);
+};
+
+exports.skipTurn = async (gameId,playerId) => {
+
+    const game =await Game.findById(gameId);
+
+    const chooserId = game.players[game.currentTurnIndex].playerId;
+
+    if (chooserId.toString() !== playerId.toString()) {
+        throw new Error('Only chooser can skip');
+    }
+
+    game.currentTurnIndex++;
+
+    if (game.currentTurnIndex >=game.players.length) {
+       // timerManager.cancelTimer(gameId);
+    const finishedGame =await gameService.endGame(gameId);
+    console.log(finishedGame.finalResults);
+    emitGameUpdated(finishedGame.roomId,finishedGame);
+    return finishedGame;
+    }
+
+    game.pendingTurn = {};
+
+    await game.save();
+
+    return handleTurnStart(gameId);
+};
+//handle guessCleanUp shld be called after timer called
+exports.handleGuessSubmission = async (gameId,playerId,guessedSong,guessedArtist) => {
+    const result =await gameService.submitGuess(gameId,playerId,guessedSong,guessedArtist);
+
+    if (!result.correct) {
+        return result.game;
+    }
+
+    // SOCKET.IO
+    emitGameUpdated(result.game.roomId, result.game);
+    const turnResult = await gameService.completeTurn(gameId);
+
+    if (!turnResult.allDone) return turnResult.game;
+    //timerManager.cancelTimer(gameId);
+    const game =turnResult.game;
+
+    game.currentTurnIndex++;
+
+    if (game.currentTurnIndex >=game.players.length) {
+        //timerManager.cancelTimer(gameId);
+   const finishedGame =await gameService.endGame(gameId);
+   console.log(finishedGame.finalResults);
+    emitGameUpdated(finishedGame.roomId,finishedGame);
+    return finishedGame;
+    }
+
+    game.players.forEach(player => {
+        player.state = 'stand-by';
+    });
+
+    await game.save();
+    return await handleTurnStart(gameId);
+};
+
+//basically the clean up function
+async function handleFinishGame(roomCode, userId) {
+
+    // Validate everything first
+    const { room, game } =await roomService.validateFinishGame(roomCode,userId);
+
+    // Persist player stats
+    await profileService.updateProfiles(game);
+    
+    // Notify everyone
+    await emitGameUpdated(game.roomId,null);////when frontend sees null,it navigates users to homepage,cuz only the host clicks this button but other players need to be navigated to the homepage automatically too 
+    // Delete runtime game state
+    await gameService.deleteGame(game._id);
+
+    // Delete room
+    await roomService.deleteRoom(roomCode);
+
+    return;
+}
+
+
+async function chooserTimeoutCleanUp(gameId) {
+
+    const game = await Game.findById(gameId);
+
+    if (!game) throw new Error("Game not found.");
+
+    // Reset pending turn
+    game.pendingTurn = {};
+
+    // Reset all player states
+    game.players.forEach(player => {
+        player.state = "stand-by";
+    });
+
+    // Move to next chooser
+    game.currentTurnIndex++;
+
+    await game.save();
+
+    if (game.currentTurnIndex >= game.players.length) {
+    const finishedGame =await gameService.endGame(gameId);
+    console.log(finishedGame.finalResults);
+    emitGameUpdated(finishedGame.roomId,finishedGame);
+    return finishedGame;
+    }
+
+    return await startTurn(gameId);
+}
+
+async function guesserTimeoutCleanUp(gameId) {
+
+    const game = await Game.findById(gameId);
+
+    if (!game)throw new Error("Game not found.");
+
+    // Reset all player states
+    game.players.forEach(player => {
+        player.state = "stand-by";
+    });
+
+    // Move to next chooser
+    game.currentTurnIndex++;
+
+    await game.save();
+
+    if (game.currentTurnIndex >= game.players.length) {
+    const finishedGame =await gameService.endGame(gameId);
+    console.log(finishedGame.finalResults);
+    emitGameUpdated(finishedGame.roomId,finishedGame);
+    return finishedGame;
+    }
+
+    return await startTurn(gameId);
 }
 
 exports.callAi = async (req, res, next) => {
-    try {
-        const response = await gameService.generateAiResponse(
-            "Never gonna give you up,never gonna let you down",
-            "Exchange the places of up and down in this"
-        );
+  try {
+    const { lyrics, playerHint } = req.body;
+    const aiHint = await gameService.generateAiResponse(lyrics, playerHint);
 
-        return res.status(200).json({ aiHint: response });
-    } catch (error) {
-        next(error);
-    }
+    res.status(200).json({ success: true, aiHint });
+  } catch (error) {
+    next(error);
+  }
 };
 
+module.exports = {
+    handleGameStart: exports.handleGameStart,
+    handleTurnStart,
+    handleSongSubmission: exports.handleSongSubmission,
+    handleHintSubmission: exports.handleHintSubmission,
+    handleGuessSubmission: exports.handleGuessSubmission,
+    submitSong: exports.handleSongSubmission,
+    submitHint: exports.handleHintSubmission,
+    submitGuess: exports.handleGuessSubmission,
+    retryChoice: exports.retryChoice,
+    skipTurn: exports.skipTurn,
+    callAi: exports.callAi,
+   chooserTimeoutCleanUp,
+   guesserTimeoutCleanUp,
+    handleFinishGame
+};
