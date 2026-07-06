@@ -187,11 +187,10 @@ async function guesserTimeoutCleanup(gameId) {
         throw new Error("Game not found.");
     }
     timerManager.cancelTimer(gameId);
-
     //find out all players in guessing states,then add to their "timeTaken"+=maximumGuessing time
     // Add maximum guessing time for everyone who never guessed
     game.players.forEach(player => {
-
+    
     if (player.state === "timed-out") {
 
         const stat = game.stats.find(
@@ -221,7 +220,7 @@ async function guesserTimeoutCleanup(gameId) {
     emitGameUpdated(finishedGame.roomId,finishedGame);
     return finishedGame;
     }
-
+    
     return await handleTurnStart(gameId);
 }
 
