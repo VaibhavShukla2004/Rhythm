@@ -13,6 +13,7 @@ const PORT = process.env.PORT || 3000;
 const server = http.createServer(app);
 
 app.use(cors());
+
 app.use(express.json());
 
 const userRoutes = require('./routes/user.routes');//imports everything that home/routes/user.routes exports
