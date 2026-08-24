@@ -17,6 +17,10 @@ const GuessingPage = () => {
   // AI-modified lyrics from the current turn
   const aiResponse = game?.pendingTurn?.aiResponse || '';
 
+  const me = game?.players?.find(
+    (p) => p.playerId?.toString() === userId?.toString() || p.playerId?._id?.toString() === userId?.toString()
+  );
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!guessedSong.trim() || !guessedArtist.trim()) {
@@ -31,11 +35,11 @@ const GuessingPage = () => {
       const { data } = await submitGuess(game._id, guessedSong.trim(), guessedArtist.trim());
       
       const returnedGame = data?.game;
-      const me = returnedGame?.players?.find(
+      const returnedMe = returnedGame?.players?.find(
         (p) => p.playerId?.toString() === userId?.toString() || p.playerId?._id?.toString() === userId?.toString()
       );
 
-      if (me && me.state === 'guessing') {
+      if (returnedMe && returnedMe.state === 'guessing') {
         // Wrong guess — stay on page, show feedback
         setWrongGuess(true);
         setSubmitting(false);
