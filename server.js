@@ -5,6 +5,12 @@ const {initializeSocket} = require('./config/socket');
 const {registerSocketHandlers} = require('./sockets/socket.handler');
 const{ startTimerSweeper} = require('./utils/timerManager');
 require('dotenv').config();
+const { webcrypto } = require('crypto');
+
+if (typeof globalThis.crypto === 'undefined') {
+    globalThis.crypto = webcrypto;
+}
+
 const connectDB = require('./config/db');//import
 
 connectDB();//then run

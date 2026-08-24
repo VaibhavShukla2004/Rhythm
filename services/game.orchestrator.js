@@ -222,7 +222,7 @@ async function guesserTimeoutCleanup(gameId) {
     emitGameUpdated(finishedGame.roomId,finishedGame);
     return finishedGame;
     }
-    console.log("outside");
+    //console.log("outside");
     return await handleTurnStart(gameId);
 }
 
