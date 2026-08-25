@@ -1,13 +1,15 @@
 const OpenAI = require("openai");
 
-const token = process.env["GITHUB_TOKEN"];
-const endpoint = "https://models.github.ai/inference";
-const model = "gpt-4o";
+const client = new OpenAI({
+  apiKey: process.env.AION_API_KEY,
+  baseURL: "https://api.aionlabs.ai/v1",
+});
 
-// Private helper function (no longer exported)
-const generatePayload = (lyrics, hint) => {
-  return {
-    systemPrompt: `
+const model = "aion-labs/aion-3.0";
+
+// Private helper function
+const generatePrompt = (lyrics, hint) => {
+  return `
 You modify song lyrics for a lyrics guessing game.
 
 Rules:
@@ -48,48 +50,30 @@ Response:
 {
   "modifiedLyrics": "Feed me pizza one more time"
 }
-`,
-    userMessage: `
+
 Lyrics:
 ${lyrics}
 
 Hint:
 ${hint}
-`,
-  };
+`;
 };
 
-// Main service function that handles the full workflow
+// Main service function
 const getModifiedLyrics = async (lyrics, hint) => {
   try {
-    const payload = generatePayload(lyrics, hint);
+    const prompt = generatePrompt(lyrics, hint);
 
-    const client = new OpenAI({
-      baseURL: endpoint,
-      apiKey: token,
-    });
-
-    const response = await client.chat.completions.create({
+    const response = await client.responses.create({
       model: model,
-      messages: [
-        {
-          role: "system",
-          content: payload.systemPrompt,
-        },
-        {
-          role: "user",
-          content: payload.userMessage,
-        },
-      ],
-      response_format: {
-        type: "json_object",
-      },
+      input: prompt,
     });
 
-    return JSON.parse(response.choices[0].message.content).modifiedLyrics;
+    const result = JSON.parse(response.output_text);
+
+    return result.modifiedLyrics;
   } catch (error) {
     console.error("AI Service Error:", error);
-    // You can throw a more generic error here if you want to hide OpenAI specifics from the controller
     throw new Error("Failed to process lyrics through AI service.");
   }
 };
