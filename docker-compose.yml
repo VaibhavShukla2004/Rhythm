@@ -24,6 +24,6 @@ services:
         - VITE_SOCKET_URL=http://localhost:5000
     container_name: rhythm-frontend
     ports:
-      - "3000:80"
+      - "80:80"
     depends_on:
       - backend

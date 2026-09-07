@@ -71,10 +71,28 @@ const RoomLobbyPage = () => {
 
   // ── Helpers ──────────────────────────────────────────────
 
-  const handleCopyCode = () => {
-    navigator.clipboard.writeText(roomCode);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopyCode = async () => {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(roomCode);
+      } else {
+        // Fallback for non-HTTPS / IP-based access
+        const textArea = document.createElement('textarea');
+        textArea.value = roomCode;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy code:', err);
+    }
   };
 
   const handleLeaveRoom = async () => {
